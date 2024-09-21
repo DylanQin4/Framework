@@ -3,8 +3,11 @@ set -e
 # Chargement des variables d'environnement depuis .env
 source .env
 
-# Compile Java
-javac -d build/WEB-INF/classes/ -cp lib/javaee-api-8.0.jar src/main/java/com/ETU1792/controller/*.java
+OUTPUT_DIR=build/WEB-INF/classes
+
+javac -d $OUTPUT_DIR -cp lib/javaee-api-8.0.jar src/main/java/com/ETU1792/annotation/*.java
+javac -d $OUTPUT_DIR -cp "$OUTPUT_DIR:lib/javaee-api-8.0.jar" src/main/java/com/ETU1792/utils/*.java
+javac -d $OUTPUT_DIR -cp "$OUTPUT_DIR:lib/javaee-api-8.0.jar" src/main/java/com/ETU1792/controller/*.java
 
 # Generer le fichier WAR
 jar -cvf framework.war -C build/ . -C src/main/webapp .

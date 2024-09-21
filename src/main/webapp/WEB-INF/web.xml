@@ -7,6 +7,10 @@
     <servlet>
         <servlet-name>FrontController</servlet-name>
         <servlet-class>com.ETU1792.controller.FrontController</servlet-class>
+        <init-param>
+            <param-name>controllerPackage</param-name>
+            <param-value>controller</param-value>
+        </init-param>
     </servlet>
 
     <servlet-mapping>
