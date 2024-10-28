@@ -1,18 +1,16 @@
 package com.ETU1792.utils;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
-
+import java.util.ArrayList;
 import com.ETU1792.annotation.Controller;
+import org.jboss.vfs.VFS;
+import org.jboss.vfs.VirtualFile;
 
 public class ScannerController {
 
-    // Recuperer toutes les classes d'un package
-    public static Set<Class<?>> getClasses(String packageName) throws ClassNotFoundException, IOException {
-        Set<Class<?>> classes = new HashSet<>();
+    public static ArrayList<Class<?>> getClasses(String packageName) throws Exception {
+        ArrayList<Class<?>> classes = new ArrayList<>();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         String path = packageName.replace('.', '/');
         URL resource = classLoader.getResource(path);
@@ -21,36 +19,44 @@ public class ScannerController {
             return classes;
         }
 
-        File packageDirectory = new File(resource.getFile().replace("%20", " "));
-        
-        for (File file : packageDirectory.listFiles()) {
-            if (file.isDirectory()) {
-                // Appel récursif si le fichier est un sous-repertoire
-                classes.addAll(ScannerController.getClasses(packageName + "." + file.getName()));
-            } else {
-                // Ajouter si c'est un .class
-                String className = packageName + "." + getFileName(file.getName(), "class");
-                classes.add(Class.forName(className));
+        // Check if using VFS (Virtual File System) for WildFly, else use standard file system
+        if (resource.toString().startsWith("vfs:")) {
+            VirtualFile packageDir = VFS.getChild(resource.toURI());
+            if (packageDir != null) {
+                for (VirtualFile file : packageDir.getChildren()) {
+                    if (file.isDirectory()) {
+                        classes.addAll(getClasses(packageName + "." + file.getName()));
+                    } else if (file.getName().endsWith(".class")) {
+                        String className = packageName + "." + Utils.getFileNameWithoutExtension(file.getName(), "class");
+                        classes.add(Class.forName(className));
+                    }
+                }
+            }
+        } else {
+            File packageDir = new File(resource.getFile().replace("%20", " "));
+            if (packageDir.isDirectory()) {
+                for (File file : packageDir.listFiles()) {
+                    if (file.isDirectory()) {
+                        classes.addAll(getClasses(packageName + "." + file.getName()));
+                    } else if (file.getName().endsWith(".class")) {
+                        String className = packageName + "." + Utils.getFileNameWithoutExtension(file.getName(), "class");
+                        classes.add(Class.forName(className));
+                    }
+                }
             }
         }
-
         return classes;
     }
 
-    // Recuperer uniquement les classes annotees avec @Controller
-    public static Set<Class<?>> getClassesWithAnnotation(String packageName) throws ClassNotFoundException, IOException {
-        Set<Class<?>> allClasses = getClasses(packageName);
-        Set<Class<?>> controllerClasses = new HashSet<>();
+    public static ArrayList<Class<?>> getControllerClasses(String packageName) throws Exception {
+        ArrayList<Class<?>> classes = getClasses(packageName);
+        ArrayList<Class<?>> controllerClasses = new ArrayList<>();
 
-        for (Class<?> clazz : allClasses) {
+        for (Class<?> clazz : classes) {
             if (clazz.isAnnotationPresent(Controller.class)) {
                 controllerClasses.add(clazz);
             }
         }
         return controllerClasses;
-    }
-
-    public static String getFileName(String fileName, String extension) {
-        return fileName.substring(0, (fileName.length() - extension.length()) - 1);
     }
 }

@@ -1,60 +1,84 @@
 package com.ETU1792.controller;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import com.ETU1792.utils.ScannerController;
+import com.ETU1792.utils.Mapping;
 
 public class FrontController extends HttpServlet {
-	List<Class<?>> controllers = null;
 
-	public void setControllers(List<Class<?>> controllers) {
-		this.controllers = controllers;
-	}
+    private ArrayList<Class<?>> controllerClasses;
+    private HashMap<String, Mapping> urlMappings;
 
-	public void init() throws ServletException {
-		String packageToScan = getServletContext().getInitParameter("controllerPackage");
+    public HashMap<String, Mapping> getUrlMappings() {
+        return urlMappings;
+    }
 
-		if (packageToScan != null && controllers == null) {
-			controllers = new ArrayList<Class<?>>();
+    public void setUrlMappings(HashMap<String, Mapping> urlMappings) {
+        this.urlMappings = urlMappings;
+    }
 
-			try {
-				Set<Class<?>> classes = ScannerController.getClassesWithAnnotation(packageToScan);
-				classes.forEach(controller -> controllers.add(controller));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	protected void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		response.setContentType("text/html;charset=UTF-8");
-        try (PrintWriter out = response.getWriter()) {
-			
-            if (controllers != null) {
-                out.println("<html><body>");
-                out.println("<h1>Liste des contrôleurs :</h1>");
-                for (Class<?> controller : controllers) {
-					out.println("<p>" + controller.getName() + "</p>");
-				}
-                out.println("</body></html>");
-            } else {
-				out.println("<html><body>Aucun contrôleur trouvé.</body></html>");
-			}
+    public void initControllerClasses() throws ServletException {
+        try {
+            String controllerPackage = this.getInitParameter("controllerPackage");
+            this.setControllerClasses(ScannerController.getControllerClasses(controllerPackage));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-	}
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		processRequest(request, response);
-	}
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		processRequest(request, response);
-	}
+    }
+
+    @Override
+    public void init() throws ServletException {
+        try {
+            initControllerClasses();
+            System.out.println("Loaded controller classes: " + this.getControllerClasses());
+
+            HashMap<String, Mapping> mappings = new Mapping().generateMappings(this.getControllerClasses());
+            if (mappings != null) {
+                this.setUrlMappings(mappings);
+            } else {
+                throw new Exception("Duplicate URL mappings detected for methods with annotations.");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public ArrayList<Class<?>> getControllerClasses() {
+        return controllerClasses;
+    }
+
+    public void setControllerClasses(ArrayList<Class<?>> controllerClasses) {
+        this.controllerClasses = controllerClasses;
+    }
+
+    public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        PrintWriter out = response.getWriter();
+        out.println("Request URI: " + request.getRequestURI());
+
+        Mapping mapping = new Mapping().findMappingForUrl(this.getUrlMappings(), request.getRequestURI());
+        if (mapping != null) {
+            out.println("ClassName: " + mapping.getClassName());
+            out.println("MethodName: " + mapping.getMethodName());
+        } else {
+            out.println("Error: Requested URL path not found.");
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        processRequest(request, response);
+    }
 }

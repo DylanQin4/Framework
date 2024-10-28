@@ -6,5 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface Controller {}
+@Target(ElementType.METHOD)
+public @interface GET {
+  	String value(); // Contient l'URL associee
+}
