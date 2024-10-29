@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -16,14 +17,6 @@ public class FrontController extends HttpServlet {
 
     private ArrayList<Class<?>> controllerClasses;
     private HashMap<String, Mapping> urlMappings;
-
-    public HashMap<String, Mapping> getUrlMappings() {
-        return urlMappings;
-    }
-
-    public void setUrlMappings(HashMap<String, Mapping> urlMappings) {
-        this.urlMappings = urlMappings;
-    }
 
     public void initControllerClasses() throws ServletException {
         try {
@@ -51,22 +44,26 @@ public class FrontController extends HttpServlet {
         }
     }
 
-    public ArrayList<Class<?>> getControllerClasses() {
-        return controllerClasses;
-    }
-
-    public void setControllerClasses(ArrayList<Class<?>> controllerClasses) {
-        this.controllerClasses = controllerClasses;
-    }
-
     public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         PrintWriter out = response.getWriter();
         out.println("Request URI: " + request.getRequestURI());
 
         Mapping mapping = new Mapping().findMappingForUrl(this.getUrlMappings(), request.getRequestURI());
         if (mapping != null) {
-            out.println("ClassName: " + mapping.getClassName());
-            out.println("MethodName: " + mapping.getMethodName());
+            try {
+                out.println("ClassName: " + mapping.getClassName());
+                out.println("MethodName: " + mapping.getMethodName());
+                out.println("");
+
+                Class<?> controllerClass = Class.forName(this.getInitParameter("controllerPackage") + "." + mapping.getClassName());
+                Object controller = controllerClass.getDeclaredConstructor().newInstance();
+                Method method = controllerClass.getMethod(mapping.getMethodName());
+
+                out.println("Method " + method.getName() + ": " + method.invoke(controller).toString());
+                
+            } catch (Exception e) {
+                throw new ServletException(e);
+            }
         } else {
             out.println("Error: Requested URL path not found.");
         }
@@ -80,5 +77,21 @@ public class FrontController extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         processRequest(request, response);
+    }
+
+    public HashMap<String, Mapping> getUrlMappings() {
+        return urlMappings;
+    }
+
+    public void setUrlMappings(HashMap<String, Mapping> urlMappings) {
+        this.urlMappings = urlMappings;
+    }
+
+    public ArrayList<Class<?>> getControllerClasses() {
+        return controllerClasses;
+    }
+
+    public void setControllerClasses(ArrayList<Class<?>> controllerClasses) {
+        this.controllerClasses = controllerClasses;
     }
 }
