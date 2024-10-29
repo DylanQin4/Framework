@@ -1,5 +1,6 @@
 /build
 .env
-framework.war
+framework.jar
 explications.txt
 /Test
+run-test.sh
