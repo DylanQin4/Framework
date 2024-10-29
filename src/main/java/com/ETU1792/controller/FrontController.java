@@ -1,5 +1,6 @@
 package com.ETU1792.controller;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -12,6 +13,7 @@ import java.util.HashMap;
 
 import com.ETU1792.utils.ScannerController;
 import com.ETU1792.utils.Mapping;
+import com.ETU1792.utils.ModelView;
 
 public class FrontController extends HttpServlet {
 
@@ -51,16 +53,33 @@ public class FrontController extends HttpServlet {
         Mapping mapping = new Mapping().findMappingForUrl(this.getUrlMappings(), request.getRequestURI());
         if (mapping != null) {
             try {
-                out.println("ClassName: " + mapping.getClassName());
-                out.println("MethodName: " + mapping.getMethodName());
-                out.println("");
+                String className = mapping.getClassName();
+                String methodName = mapping.getMethodName();
 
-                Class<?> controllerClass = Class.forName(this.getInitParameter("controllerPackage") + "." + mapping.getClassName());
-                Object controller = controllerClass.getDeclaredConstructor().newInstance();
-                Method method = controllerClass.getMethod(mapping.getMethodName());
+                Class<?> clazz = Class.forName(this.getInitParameter("controllerPackage") + "." + className);
+                Method method = clazz.getMethod(methodName);
 
-                out.println("Method " + method.getName() + ": " + method.invoke(controller).toString());
-                
+                Object instance = clazz.getDeclaredConstructor().newInstance();
+
+                Object result = method.invoke(instance);
+
+                if (result instanceof String) {
+                    // Retourner directement la valeur de type String
+                    out.println(result);
+                } else if (result instanceof ModelView) {
+                    // Gestion du type ModelView
+                    ModelView modelView = (ModelView) result;
+
+                    for (String key : modelView.getData().keySet()) {
+                        request.setAttribute(key, modelView.getData().get(key));
+                    }
+
+                    // Redirection
+                    RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/views/"+modelView.getUrl());
+                    dispatcher.forward(request, response);
+                } else {
+                    out.println("Type de retour non reconnu.");
+                }
             } catch (Exception e) {
                 throw new ServletException(e);
             }
