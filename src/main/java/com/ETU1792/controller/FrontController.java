@@ -23,9 +23,12 @@ public class FrontController extends HttpServlet {
     public void initControllerClasses() throws ServletException {
         try {
             String controllerPackage = this.getInitParameter("controllerPackage");
+            if (controllerPackage == null || controllerPackage.isEmpty()) {
+                throw new ServletException("Le package des controleurs est vide ou n'existe pas.");
+            }
             this.setControllerClasses(ScannerController.getControllerClasses(controllerPackage));
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new ServletException("Erreur lors de l'initialisation des classes de controleurs : " + e.getMessage(), e);
         }
     }
 
@@ -36,13 +39,12 @@ public class FrontController extends HttpServlet {
             System.out.println("Loaded controller classes: " + this.getControllerClasses());
 
             HashMap<String, Mapping> mappings = new Mapping().generateMappings(this.getControllerClasses());
-            if (mappings != null) {
-                this.setUrlMappings(mappings);
-            } else {
-                throw new Exception("Duplicate URL mappings detected for methods with annotations.");
+            if (mappings == null) {
+                throw new ServletException("Annotations dupliquees detectees pour les methodes avec annotations.");
             }
+            this.setUrlMappings(mappings);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ServletException("Erreur d'initialisation : " + e.getMessage(), e);
         }
     }
 
@@ -51,40 +53,40 @@ public class FrontController extends HttpServlet {
         out.println("Request URI: " + request.getRequestURI());
 
         Mapping mapping = new Mapping().findMappingForUrl(this.getUrlMappings(), request.getRequestURI());
-        if (mapping != null) {
-            try {
-                String className = mapping.getClassName();
-                String methodName = mapping.getMethodName();
+        
+        if (mapping == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            out.println("Error 404: URL not found.");
+            return;
+        }
 
-                Class<?> clazz = Class.forName(this.getInitParameter("controllerPackage") + "." + className);
-                Method method = clazz.getMethod(methodName);
+        try {
+            String className = mapping.getClassName();
+            String methodName = mapping.getMethodName();
 
-                Object instance = clazz.getDeclaredConstructor().newInstance();
+            Class<?> clazz = Class.forName(this.getInitParameter("controllerPackage") + "." + className);
+            Method method = clazz.getMethod(methodName);
 
-                Object result = method.invoke(instance);
+            Object instance = clazz.getDeclaredConstructor().newInstance();
 
-                if (result instanceof String) {
-                    // Retourner directement la valeur de type String
-                    out.println(result);
-                } else if (result instanceof ModelView) {
-                    // Gestion du type ModelView
-                    ModelView modelView = (ModelView) result;
+            Object result = method.invoke(instance);
 
-                    for (String key : modelView.getData().keySet()) {
-                        request.setAttribute(key, modelView.getData().get(key));
-                    }
-
-                    // Redirection
-                    RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/views/"+modelView.getUrl());
-                    dispatcher.forward(request, response);
-                } else {
-                    out.println("Type de retour non reconnu.");
+            if (result instanceof String) {
+                out.println(result);
+            } else if (result instanceof ModelView) {
+                ModelView modelView = (ModelView) result;
+                for (String key : modelView.getData().keySet()) {
+                    request.setAttribute(key, modelView.getData().get(key));
                 }
-            } catch (Exception e) {
-                throw new ServletException(e);
+                RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/views/" + modelView.getUrl());
+                dispatcher.forward(request, response);
+            } else {
+                throw new ServletException("Type de retour non reconnu : seulement String ou ModelView sont acceptes.");
             }
-        } else {
-            out.println("Error: Requested URL path not found.");
+        } catch (ServletException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ServletException("Erreur lors du traitement de la requête : " + e.getMessage(), e);
         }
     }
 
