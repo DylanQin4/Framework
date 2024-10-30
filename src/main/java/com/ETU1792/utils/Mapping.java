@@ -73,4 +73,15 @@ public class Mapping {
         }
         return null;
     }
+
+
+    // Trouver la methode annotee dans la classe
+    public static Method findAnnotatedMethod(Class<?> clazz, String methodName) {
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(GET.class) && method.getName().equals(methodName)) {
+                return method;
+            }
+        }
+        return null;
+    }
 }

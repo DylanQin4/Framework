@@ -1,92 +1,69 @@
 package com.ETU1792.controller;
 
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.ETU1792.utils.Mapping;
+import com.ETU1792.utils.ModelView;
+import com.ETU1792.utils.ScannerController;
+import com.ETU1792.utils.Utils;
+
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import com.ETU1792.utils.ScannerController;
-import com.ETU1792.utils.Mapping;
-import com.ETU1792.utils.ModelView;
+import java.util.List;
 
 public class FrontController extends HttpServlet {
 
     private ArrayList<Class<?>> controllerClasses;
     private HashMap<String, Mapping> urlMappings;
 
-    public void initControllerClasses() throws ServletException {
+    public void initializeControllerClasses() throws ServletException {
         try {
-            String controllerPackage = this.getInitParameter("controllerPackage");
+            String controllerPackage = getInitParameter("controllerPackage");
             if (controllerPackage == null || controllerPackage.isEmpty()) {
-                throw new ServletException("Le package des controleurs est vide ou n'existe pas.");
+                throw new ServletException("The controllers package is empty or undefined.");
             }
-            this.setControllerClasses(ScannerController.getControllerClasses(controllerPackage));
+            this.controllerClasses = ScannerController.getControllerClasses(controllerPackage);
         } catch (Exception e) {
-            throw new ServletException("Erreur lors de l'initialisation des classes de controleurs : " + e.getMessage(), e);
+            throw new ServletException("Error initializing controller classes : " + e.getMessage(), e);
         }
     }
 
     @Override
     public void init() throws ServletException {
         try {
-            initControllerClasses();
-            System.out.println("Loaded controller classes: " + this.getControllerClasses());
-
-            HashMap<String, Mapping> mappings = new Mapping().generateMappings(this.getControllerClasses());
-            if (mappings == null) {
-                throw new ServletException("Annotations dupliquees detectees pour les methodes avec annotations.");
+            initializeControllerClasses();
+            this.urlMappings = new Mapping().generateMappings(controllerClasses);
+            if (urlMappings == null) {
+                throw new ServletException("Duplicate annotations detected in methods.");
             }
-            this.setUrlMappings(mappings);
+            
         } catch (Exception e) {
-            throw new ServletException("Erreur d'initialisation : " + e.getMessage(), e);
+            throw new ServletException("Initialization error : " + e.getMessage(), e);
         }
     }
 
-    public void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    private void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         PrintWriter out = response.getWriter();
-        out.println("Request URI: " + request.getRequestURI());
 
-        Mapping mapping = new Mapping().findMappingForUrl(this.getUrlMappings(), request.getRequestURI());
-        
+        Mapping mapping = getMappingForUrl(request.getRequestURI());
         if (mapping == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             out.println("Error 404: URL not found.");
             return;
         }
 
+        String controllerPackage = getInitParameter("controllerPackage");
         try {
-            String className = mapping.getClassName();
-            String methodName = mapping.getMethodName();
-
-            Class<?> clazz = Class.forName(this.getInitParameter("controllerPackage") + "." + className);
-            Method method = clazz.getMethod(methodName);
-
-            Object instance = clazz.getDeclaredConstructor().newInstance();
-
-            Object result = method.invoke(instance);
-
-            if (result instanceof String) {
-                out.println(result);
-            } else if (result instanceof ModelView) {
-                ModelView modelView = (ModelView) result;
-                for (String key : modelView.getData().keySet()) {
-                    request.setAttribute(key, modelView.getData().get(key));
-                }
-                RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/views/" + modelView.getUrl());
-                dispatcher.forward(request, response);
-            } else {
-                throw new ServletException("Type de retour non reconnu : seulement String ou ModelView sont acceptes.");
-            }
-        } catch (ServletException e) {
-            throw e;
+            invokeMappedMethod(controllerPackage, mapping, request, response);
         } catch (Exception e) {
-            throw new ServletException("Erreur lors du traitement de la requête : " + e.getMessage(), e);
+            throw new ServletException("Error while executing method : " + e.getMessage(), e);
         }
     }
 
@@ -100,6 +77,36 @@ public class FrontController extends HttpServlet {
         processRequest(request, response);
     }
 
+    // Recuperer le mapping correspondant à une URL
+    private Mapping getMappingForUrl(String url) {
+        String cleanUrl = url.split("\\?")[0];
+        return new Mapping().findMappingForUrl(this.getUrlMappings(), cleanUrl);
+    }
+
+    // Executer la methode mappee en fonction du Mapping
+    private void invokeMappedMethod(String controllerPackage, Mapping mapping, HttpServletRequest request, HttpServletResponse response)
+            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException, Exception {
+        
+        Class<?> controllerClass = Class.forName(controllerPackage + "." + mapping.getClassName());
+        Method method = Mapping.findAnnotatedMethod(controllerClass, mapping.getMethodName());
+
+        if (method == null || !(method.getReturnType() == String.class || method.getReturnType() == ModelView.class)) {
+            throw new Exception("Invalid return type for method : " + mapping.getMethodName());
+        }
+
+        Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
+        List<Object> methodParameters = Utils.prepareMethodParameters(controllerInstance, method, request, response);
+
+        Object result = method.invoke(controllerInstance, methodParameters.toArray());
+
+        if (result instanceof String) {
+            response.getWriter().println("Method executed : " + result.toString());
+        } else if (result instanceof ModelView) {
+            ((ModelView) result).forwardToView(request, response);
+        }
+    }
+
+    // Accesseurs pour les proprietes urlMappings et controllerClasses
     public HashMap<String, Mapping> getUrlMappings() {
         return urlMappings;
     }
