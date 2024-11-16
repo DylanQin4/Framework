@@ -47,4 +47,11 @@ public class ModelView {
     public void setIsRedirect(Boolean isRedirect) {
         this.isRedirect = isRedirect;
     }
+
+    // affiche data
+    public void showData() {
+        for (Map.Entry<String, Object> data : this.getData().entrySet()) {
+            System.out.println(data.getKey() + " : " + data.getValue());
+        }
+    }
 }
