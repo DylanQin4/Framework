@@ -88,25 +88,21 @@ public class Utils {
         for (int i = 0; i < method.getParameterCount(); i++) {
             Class<?> paramType = method.getParameterTypes()[i];
 
-            // Verifier si le paramètre est annote avec @Param
-            if (method.getParameters()[i].isAnnotationPresent(Param.class)) {
+            // Gestion des sessions
+            if (paramType == MySession.class) {
+                methodParameters.add(new MySession(request.getSession()));
+            } 
+            // Autres paramètres
+            else if (method.getParameters()[i].isAnnotationPresent(Param.class)) {
                 Param paramAnnotation = method.getParameters()[i].getAnnotation(Param.class);
-                String paramName = paramAnnotation.name(); // Recuperer le nom defini dans @Param
+                String paramName = paramAnnotation.name();
                 String paramValue = request.getParameter(paramName);
 
-                if (paramValue != null) {
-                    methodParameters.add(Utils.convertType(paramType, paramValue));
-                } else {
-                    methodParameters.add(null); // Ajouter null si aucune valeur n'est trouvee
-                }
-            } 
-            // Verifier si le paramètre est annote avec @ParamObject
-            else if (method.getParameters()[i].isAnnotationPresent(ParamObject.class)) {
-                Object paramObject = processParamObject(paramType, request); // Remplir l'objet
+                methodParameters.add(Utils.convertType(paramType, paramValue));
+            } else if (method.getParameters()[i].isAnnotationPresent(ParamObject.class)) {
+                Object paramObject = processParamObject(paramType, request);
                 methodParameters.add(paramObject);
-            } 
-            // Cas des paramètres simples sans annotation
-            else {
+            } else {
                 String paramValue = paramNames.length > i ? request.getParameter(paramNames[i]) : null;
                 methodParameters.add(Utils.convertType(paramType, paramValue));
             }
@@ -119,7 +115,15 @@ public class Utils {
         if (result instanceof String) {
             response.getWriter().println("Method executed : " + result.toString());
         } else if (result instanceof ModelView) {
-            ((ModelView) result).forwardToView(request, response);
+            ModelView mv = (ModelView) result;
+        
+            if (mv.isRedirect()) {
+                // Effectuer une redirection HTTP
+                response.sendRedirect(mv.getUrl());
+            } else {
+                // Effectuer un forward normal vers la vue
+                mv.forwardToView(request, response);
+            }
         }
     }
 

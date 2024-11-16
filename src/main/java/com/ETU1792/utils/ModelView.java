@@ -13,6 +13,7 @@ import java.io.IOException;
 public class ModelView {
     private String url; // url of destination
     private HashMap<String, Object> data = new HashMap<>(); // data to send
+    private Boolean isRedirect = false;
 
     public ModelView(String url) {
         this.url = url;
@@ -37,5 +38,13 @@ public class ModelView {
 
     public void addObject(String name, Object value) {
         this.data.put(name, value);
+    }
+
+    public Boolean isRedirect() {
+        return isRedirect;
+    }
+
+    public void setIsRedirect(Boolean isRedirect) {
+        this.isRedirect = isRedirect;
     }
 }
