@@ -4,10 +4,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.ETU1792.annotation.FieldName;
+import com.ETU1792.annotation.JSON;
 import com.ETU1792.annotation.Param;
 import com.ETU1792.annotation.ParamObject;
 import com.thoughtworks.paranamer.CachingParanamer;
 import com.thoughtworks.paranamer.Paranamer;
+import com.google.gson.Gson;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -21,6 +23,11 @@ import java.lang.reflect.Parameter;
 
 public class Utils {
     private static final Paranamer paranamer = new CachingParanamer();
+    private static final Gson gson = new Gson();
+
+    public static String convertToJson(Object object) {
+        return gson.toJson(object);
+    }
 
     public static String getFileNameWithoutExtension(String fileName, String extension) {
         return fileName.substring(0, (fileName.length() - extension.length()) - 1);
@@ -68,22 +75,21 @@ public class Utils {
     }
 
 
-    // Executer la methode mappee en fonction du Mapping
     public static void invokeMappedMethod(String controllerPackage, Mapping mapping, HttpServletRequest request, HttpServletResponse response)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException, Exception {
 
         Class<?> controllerClass = Class.forName(controllerPackage + "." + mapping.getClassName());
         Method method = Mapping.findAnnotatedMethod(controllerClass, mapping.getMethodName());
 
-        if (method == null || !(method.getReturnType() == String.class || method.getReturnType() == ModelView.class)) {
-            throw new Exception("Invalid return type for method : " + mapping.getMethodName());
+        if (method == null) {
+            throw new Exception("Method not found for mapping: " + mapping.getMethodName());
         }
 
         Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
 
-        // Preparer les paramètres de la methode
+        // Préparer les paramètres de la méthode
         List<Object> methodParameters = new ArrayList<>();
-        String[] paramNames = paranamer.lookupParameterNames(method); // Recuperer les noms des paramètres (si disponibles)
+        String[] paramNames = paranamer.lookupParameterNames(method); // Récupérer les noms des paramètres (si disponibles)
 
         for (int i = 0; i < method.getParameterCount(); i++) {
             Class<?> paramType = method.getParameterTypes()[i];
@@ -91,7 +97,7 @@ public class Utils {
             // Gestion des sessions
             if (paramType == MySession.class) {
                 methodParameters.add(new MySession(request.getSession()));
-            } 
+            }
             // Autres paramètres
             else if (method.getParameters()[i].isAnnotationPresent(Param.class)) {
                 Param paramAnnotation = method.getParameters()[i].getAnnotation(Param.class);
@@ -108,15 +114,22 @@ public class Utils {
             }
         }
 
-        // Executer la methode
+        // Exécuter la méthode
         Object result = method.invoke(controllerInstance, methodParameters.toArray());
 
-        // Traiter le resultat de la methode
-        if (result instanceof String) {
-            response.getWriter().println("Method executed : " + result.toString());
+        // Vérifier si la méthode est annotée avec @JSON
+        if (method.isAnnotationPresent(JSON.class)) {
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            String jsonResponse = Utils.convertToJson(result); // Convertir l'objet en JSON
+            response.getWriter().write(jsonResponse);
+        }
+        // Traiter le résultat de la méthode
+        else if (result instanceof String) {
+            response.getWriter().println("Method executed: " + result.toString());
         } else if (result instanceof ModelView) {
             ModelView mv = (ModelView) result;
-        
+            
             if (mv.isRedirect()) {
                 // Effectuer une redirection HTTP
                 response.sendRedirect(mv.getUrl());
@@ -126,6 +139,7 @@ public class Utils {
             }
         }
     }
+
 
     // Methode pour remplir les objets annotes avec @ParamObject
     private static Object processParamObject(Class<?> paramType, HttpServletRequest request) throws Exception {
