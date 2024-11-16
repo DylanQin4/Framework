@@ -78,8 +78,14 @@ public class Utils {
     public static void invokeMappedMethod(String controllerPackage, Mapping mapping, HttpServletRequest request, HttpServletResponse response)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException, Exception {
 
+        // Vérifier si le verbe HTTP correspond
+        String requestVerb = request.getMethod(); // Récupère "GET" ou "POST"
+        if (!mapping.getVerb().equalsIgnoreCase(requestVerb)) {
+            throw new Exception("Invalid HTTP method. Expected " + mapping.getVerb() + " but got " + requestVerb);
+        }
+
         Class<?> controllerClass = Class.forName(controllerPackage + "." + mapping.getClassName());
-        Method method = Mapping.findAnnotatedMethod(controllerClass, mapping.getMethodName());
+        Method method = Mapping.findAnnotatedMethod(controllerClass, mapping.getMethodName(), mapping.getVerb());
 
         if (method == null) {
             throw new Exception("Method not found for mapping: " + mapping.getMethodName());
@@ -104,6 +110,7 @@ public class Utils {
                 String paramName = paramAnnotation.name();
                 String paramValue = request.getParameter(paramName);
 
+                System.out.println("Converted value: " + Utils.convertType(paramType, paramValue));
                 methodParameters.add(Utils.convertType(paramType, paramValue));
             } else if (method.getParameters()[i].isAnnotationPresent(ParamObject.class)) {
                 Object paramObject = processParamObject(paramType, request);
@@ -129,6 +136,7 @@ public class Utils {
             response.getWriter().println("Method executed: " + result.toString());
         } else if (result instanceof ModelView) {
             ModelView mv = (ModelView) result;
+            mv.showData();
             
             if (mv.isRedirect()) {
                 // Effectuer une redirection HTTP
