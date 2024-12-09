@@ -10,7 +10,7 @@ public class MySession {
         this.session = session;
     }
 
-    // Récupérer une valeur de la session
+    // Recuperer une valeur de la session
     public Object get(String key) {
         return session.getAttribute(key);
     }
@@ -25,7 +25,7 @@ public class MySession {
         session.removeAttribute(key);
     }
 
-    // Récupérer toutes les clés de la session (optionnel)
+    // Recuperer toutes les cles de la session (optionnel)
     public Enumeration<String> getKeys() {
         return session.getAttributeNames();
     }

@@ -108,7 +108,7 @@ public class Mapping {
         System.out.println("Searching for method: " + methodName + " with verb: " + verb + " in class: " + clazz.getName());
 
         for (Method method : clazz.getDeclaredMethods()) {
-            // Vérifiez si l'annotation correspond au verbe
+            // Verifiez si l'annotation correspond au verbe
             if ("GET".equalsIgnoreCase(verb) && method.isAnnotationPresent(GET.class) && method.getName().equals(methodName)) {
                 return method;
             }
@@ -116,7 +116,7 @@ public class Mapping {
                 return method;
             }
         }
-        return null; // Aucune méthode trouvée pour le verbe et le nom donnés
+        return null; // Aucune methode trouvee pour le verbe et le nom donnes
     }
     
 }
