@@ -2,6 +2,7 @@ package com.ETU1792.utils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
 
 import com.ETU1792.annotation.FieldName;
 import com.ETU1792.annotation.JSON;
@@ -13,9 +14,9 @@ import com.google.gson.Gson;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -43,19 +44,52 @@ public class Utils {
     public static List<Object> prepareMethodParameters(Object controllerInstance, Method method, HttpServletRequest request, HttpServletResponse response) 
             throws Exception {
         
-        List<Object> parameters = new ArrayList<>();
-        for (Parameter param : method.getParameters()) {
-            Annotation paramAnnotation = param.getAnnotation(Param.class);
-            String paramName = paramAnnotation != null ? ((Param) paramAnnotation).name() : param.getName();
-            
-            String paramValue = request.getParameter(paramName);
-            if (paramValue != null) {
-                parameters.add(paramValue);
-            } else {
-                throw new Exception("The required parameter " + paramName + " is missing.");
+        List<Object> methodParameters = new ArrayList<>();
+        String[] paramNames = paranamer.lookupParameterNames(method); // Recuperer les noms des parametres (si disponibles)
+        List<Parameter> parameters = Arrays.asList(method.getParameters());
+
+        for (Parameter param : parameters) {
+            Class<?> paramType = param.getType();
+            String paramName = Arrays.asList(paramNames).contains(param.getName()) ? param.getName() : null;
+
+            // Gestion des sessions
+            if (paramType == MySession.class) {
+                methodParameters.add(new MySession(request.getSession()));
+            }
+            // Gestion de fichier (Part)
+            else if (Part.class.isAssignableFrom(paramType)) {
+                Param paramAnnotation = param.getAnnotation(Param.class);
+                paramName = paramAnnotation != null ? paramAnnotation.name() : paramName;
+                Part part = request.getPart(paramName);
+                if (part != null) {
+                    if (part.getSize() > 0) {
+                        methodParameters.add(part);
+                    } else {
+                        throw new Exception("The required file parameter " + paramName + " is empty.");
+                    }
+                } else {
+                    throw new Exception("The required file parameter " + paramName + " is missing.");
+                }
+            }
+            // Gestion des parametres annotes avec @Param
+            else if (param.isAnnotationPresent(Param.class)) {
+                Param paramAnnotation = param.getAnnotation(Param.class);
+                paramName = paramAnnotation.name();
+                String paramValue = request.getParameter(paramName);
+                methodParameters.add(Utils.convertType(paramType, paramValue));
+            }
+            // Gestion des parametres annotes avec @ParamObject
+            else if (param.isAnnotationPresent(ParamObject.class)) {
+                Object paramObject = processParamObject(paramType, request);
+                methodParameters.add(paramObject);
+            }
+            // Gestion des autres parametres
+            else {
+                String paramValue = paramName != null ? request.getParameter(paramName) : null;
+                methodParameters.add(Utils.convertType(paramType, paramValue));
             }
         }
-        return parameters;
+        return methodParameters;
     }
 
     public static Object convertType(Class<?> type, String value) {
@@ -71,15 +105,15 @@ public class Utils {
         if (type == boolean.class || type == Boolean.class) {
             return Boolean.parseBoolean(value);
         }
-        return value; // Par defaut, retourne une chaine
+        return value;
     }
 
 
     public static void invokeMappedMethod(String controllerPackage, Mapping mapping, HttpServletRequest request, HttpServletResponse response)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException, Exception {
 
-        // Vérifier si le verbe HTTP correspond
-        String requestVerb = request.getMethod(); // Récupère "GET" ou "POST"
+        // Verifier si le verbe HTTP correspond
+        String requestVerb = request.getMethod(); // Recupere "GET" ou "POST"
         if (!mapping.getVerb().equalsIgnoreCase(requestVerb)) {
             throw new Exception("Invalid HTTP method. Expected " + mapping.getVerb() + " but got " + requestVerb);
         }
@@ -93,45 +127,21 @@ public class Utils {
 
         Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
 
-        // Préparer les paramètres de la méthode
-        List<Object> methodParameters = new ArrayList<>();
-        String[] paramNames = paranamer.lookupParameterNames(method); // Récupérer les noms des paramètres (si disponibles)
+        // Preparer les parametres de la methode
+        List<Object> methodParameters = prepareMethodParameters(controllerInstance, method, request, response);
+        
 
-        for (int i = 0; i < method.getParameterCount(); i++) {
-            Class<?> paramType = method.getParameterTypes()[i];
-
-            // Gestion des sessions
-            if (paramType == MySession.class) {
-                methodParameters.add(new MySession(request.getSession()));
-            }
-            // Autres paramètres
-            else if (method.getParameters()[i].isAnnotationPresent(Param.class)) {
-                Param paramAnnotation = method.getParameters()[i].getAnnotation(Param.class);
-                String paramName = paramAnnotation.name();
-                String paramValue = request.getParameter(paramName);
-
-                System.out.println("Converted value: " + Utils.convertType(paramType, paramValue));
-                methodParameters.add(Utils.convertType(paramType, paramValue));
-            } else if (method.getParameters()[i].isAnnotationPresent(ParamObject.class)) {
-                Object paramObject = processParamObject(paramType, request);
-                methodParameters.add(paramObject);
-            } else {
-                String paramValue = paramNames.length > i ? request.getParameter(paramNames[i]) : null;
-                methodParameters.add(Utils.convertType(paramType, paramValue));
-            }
-        }
-
-        // Exécuter la méthode
+        // Executer la methode
         Object result = method.invoke(controllerInstance, methodParameters.toArray());
 
-        // Vérifier si la méthode est annotée avec @JSON
+        // Verifier si la methode est annotee avec @JSON
         if (method.isAnnotationPresent(JSON.class)) {
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
             String jsonResponse = Utils.convertToJson(result); // Convertir l'objet en JSON
             response.getWriter().write(jsonResponse);
         }
-        // Traiter le résultat de la méthode
+        // Traiter le resultat de la methode
         else if (result instanceof String) {
             response.getWriter().println("Method executed: " + result.toString());
         } else if (result instanceof ModelView) {
@@ -201,7 +211,7 @@ public class Utils {
         errorMessage += "<section>";
         errorMessage += "<h2>Une erreur s'est produite :</h2>";
         errorMessage += "<p><strong>Message :</strong> " + e.getMessage() + "</p>";
-        errorMessage += "<p><strong>Cause :</strong> " + (e.getCause() != null ? e.getCause().toString() : "Aucune cause spécifique") + "</p>";
+        errorMessage += "<p><strong>Cause :</strong> " + (e.getCause() != null ? e.getCause().toString() : "Aucune cause specifique") + "</p>";
         errorMessage += "<h3>Trace de l'exception :</h3><pre>";
 
         // Ajouter la trace de l'exception
@@ -218,7 +228,7 @@ public class Utils {
         errorMessage += "</body>";
         errorMessage += "</html>";
 
-        // Afficher l'erreur dans la réponse
+        // Afficher l'erreur dans la reponse
         response.getWriter().println(errorMessage);
     }
 
