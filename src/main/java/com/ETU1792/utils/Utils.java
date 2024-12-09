@@ -8,6 +8,10 @@ import com.ETU1792.annotation.FieldName;
 import com.ETU1792.annotation.JSON;
 import com.ETU1792.annotation.Param;
 import com.ETU1792.annotation.ParamObject;
+import com.ETU1792.annotation.validation.Date;
+import com.ETU1792.annotation.validation.Email;
+import com.ETU1792.annotation.validation.Numeric;
+import com.ETU1792.annotation.validation.Required;
 import com.thoughtworks.paranamer.CachingParanamer;
 import com.thoughtworks.paranamer.Paranamer;
 import com.google.gson.Gson;
@@ -17,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -93,14 +98,22 @@ public class Utils {
     }
 
     public static Object convertType(Class<?> type, String value) {
-        if (value == null) {
+        if (value == null || value.isEmpty()) {
             return null;
         }
         if (type == int.class || type == Integer.class) {
-            return Integer.parseInt(value);
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid integer value: " + value);
+            }
         }
         if (type == double.class || type == Double.class) {
-            return Double.parseDouble(value);
+            try {
+                return Double.parseDouble(value);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid double value: " + value);
+            }
         }
         if (type == boolean.class || type == Boolean.class) {
             return Boolean.parseBoolean(value);
@@ -170,6 +183,10 @@ public class Utils {
                     : field.getName(); // Utiliser le nom du champ s'il n'est pas annote
 
             String paramValue = request.getParameter(fieldName);
+
+            // Valider le champ
+            validateField(field, paramValue);
+
             if (paramValue != null) {
                 Object convertedValue = Utils.convertType(field.getType(), paramValue);
                 field.set(instance, convertedValue);
@@ -177,6 +194,27 @@ public class Utils {
         }
 
         return instance;
+    }
+
+    private static void validateField(Field field, String value) throws Exception {
+        if (value == null || value.isEmpty()) {
+            if (field.isAnnotationPresent(Required.class)) {
+                throw new Exception("The field " + field.getName() + " is required.");
+            }
+            return;
+        }
+
+        for (Annotation annotation : field.getAnnotations()) {
+            if (annotation instanceof Email && !Validator.isValidEmail(value)) {
+                throw new Exception("The field " + field.getName() + " must be a valid email.");
+            }
+            if (annotation instanceof Date && !Validator.isValidDate(value)) {
+                throw new Exception("The field " + field.getName() + " must be a valid date.");
+            }
+            if (annotation instanceof Numeric && !Validator.isNumeric(value)) {
+                throw new Exception("The field " + field.getName() + " must be numeric.");
+            }
+        }
     }
 
     public static void handleError(HttpServletResponse response, Exception e) throws IOException {
