@@ -169,4 +169,59 @@ public class Utils {
         return instance;
     }
 
+    public static void handleError(HttpServletResponse response, Exception e) throws IOException {
+        response.setContentType("text/html");
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);  // Code d'erreur 500
+
+        String errorMessage = "<!DOCTYPE html>";
+        errorMessage += "<html lang=\"fr\">";
+        errorMessage += "<head>";
+        errorMessage += "<meta charset=\"UTF-8\">";
+        errorMessage += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
+        errorMessage += "<title>Erreur du serveur</title>";
+
+        // Ajouter du CSS
+        errorMessage += "<style>";
+        errorMessage += "body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; color: #333; }";
+        errorMessage += "header { background-color: #ff4f5a; color: white; padding: 10px 20px; text-align: center; }";
+        errorMessage += "section { margin: 20px; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }";
+        errorMessage += "h1 { font-size: 2em; }";
+        errorMessage += "p { line-height: 1.6; }";
+        errorMessage += "pre { background-color: #333; color: #fff; padding: 15px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }";
+        errorMessage += "footer { text-align: center; font-size: 0.8em; padding: 10px 0; background-color: #eee; margin-top: 20px; }";
+        errorMessage += "</style>";
+
+        errorMessage += "</head>";
+        errorMessage += "<body>";
+
+        // En-tete
+        errorMessage += "<header><h1>Erreur interne du serveur</h1></header>";
+
+        // Contenu de la page d'erreur
+        errorMessage += "<section>";
+        errorMessage += "<h2>Une erreur s'est produite :</h2>";
+        errorMessage += "<p><strong>Message :</strong> " + e.getMessage() + "</p>";
+        errorMessage += "<p><strong>Cause :</strong> " + (e.getCause() != null ? e.getCause().toString() : "Aucune cause spécifique") + "</p>";
+        errorMessage += "<h3>Trace de l'exception :</h3><pre>";
+
+        // Ajouter la trace de l'exception
+        for (StackTraceElement element : e.getStackTrace()) {
+            errorMessage += element.toString() + "<br/>";
+        }
+
+        errorMessage += "</pre>";
+        errorMessage += "</section>";
+
+        // Footer
+        errorMessage += "<footer><p>&copy; " + java.time.LocalDate.now().getYear() + " Framework Lohataona XD.</p></footer>";
+
+        errorMessage += "</body>";
+        errorMessage += "</html>";
+
+        // Afficher l'erreur dans la réponse
+        response.getWriter().println(errorMessage);
+    }
+
+
+
 }

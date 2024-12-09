@@ -10,7 +10,6 @@ import com.ETU1792.utils.ScannerController;
 import com.ETU1792.utils.Utils;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -46,20 +45,22 @@ public class FrontController extends HttpServlet {
     }
 
     private void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        PrintWriter out = response.getWriter();
-
-        Mapping mapping = Utils.getMappingForUrl(request.getRequestURI(), this.getUrlMappings());
-        if (mapping == null) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            out.println("Error 404: URL not found.");
-            return;
-        }
-
-        String controllerPackage = getInitParameter("controllerPackage");
         try {
-            Utils.invokeMappedMethod(controllerPackage, mapping, request, response);
-        } catch (Exception e) {
-            throw new ServletException("Error while executing method : " + e.getMessage(), e);
+            Mapping mapping = Utils.getMappingForUrl(request.getRequestURI(), this.getUrlMappings());
+            if (mapping == null) {
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                throw new Exception("No mapping found for URL : " + request.getRequestURI());
+            }
+
+            String controllerPackage = getInitParameter("controllerPackage");
+            try {
+                Utils.invokeMappedMethod(controllerPackage, mapping, request, response);
+            } catch (Exception e) {
+                throw new ServletException("Error while executing method : " + e.getMessage(), e);
+            }
+        } catch(Exception e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            Utils.handleError(response, e);
         }
     }
 
