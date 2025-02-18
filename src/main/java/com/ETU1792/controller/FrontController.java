@@ -5,13 +5,18 @@ import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import com.ETU1792.utils.Mapping;
 import com.ETU1792.utils.ScannerController;
 import com.ETU1792.utils.Utils;
+import com.ETU1792.annotation.Authentified;
+import com.ETU1792.annotation.Role;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 @MultipartConfig
@@ -56,6 +61,33 @@ public class FrontController extends HttpServlet {
 
             String controllerPackage = getInitParameter("controllerPackage");
             try {
+                // Vérifier les annotations d'authentification et de rôle
+                Class<?> controllerClass = Class.forName(controllerPackage + "." + mapping.getClassName());
+                Method method = Mapping.findAnnotatedMethod(controllerClass, mapping.getMethodName(), mapping.getVerb());
+
+                if (method.isAnnotationPresent(Authentified.class)) {
+                    HttpSession session = request.getSession(false);
+                    if (session == null || session.getAttribute("auth") == null) {
+                        throw new Exception("User not authenticated.");
+                    }
+                }
+
+                if (method.isAnnotationPresent(Role.class)) {
+                    HttpSession session = request.getSession(false);
+                    if (session == null || session.getAttribute("auth") == null) {
+                        throw new Exception("User not authenticated.");
+                    }
+                    String userRole = (String) session.getAttribute("role");
+                    System.out.println("User role: " + userRole);
+                    String[] requiredRoles = method.getAnnotation(Role.class).value();
+                    System.out.println("Required roles: " + Arrays.toString(requiredRoles));
+                    boolean hasRole = Arrays.stream(requiredRoles).anyMatch(role -> role.equals(userRole));
+                    if (!hasRole) {
+                        throw new Exception("User does not have the required role.");
+                    }
+                }
+
+                // Exécuter la méthode mappée
                 Utils.invokeMappedMethod(controllerPackage, mapping, request, response);
             } catch (Exception e) {
                 throw new ServletException("Error while executing method : " + e.getMessage(), e);
