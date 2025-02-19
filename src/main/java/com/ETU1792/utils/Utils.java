@@ -1,102 +1,142 @@
 package com.ETU1792.utils;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.*;
 import javax.servlet.http.Part;
-
-import com.ETU1792.annotation.FieldName;
-import com.ETU1792.annotation.JSON;
-import com.ETU1792.annotation.Param;
-import com.ETU1792.annotation.ParamObject;
+import com.ETU1792.annotation.*;
 import com.ETU1792.annotation.validation.Date;
 import com.ETU1792.annotation.validation.Email;
 import com.ETU1792.annotation.validation.Numeric;
 import com.ETU1792.annotation.validation.Required;
+import com.google.gson.Gson;
 import com.thoughtworks.paranamer.CachingParanamer;
 import com.thoughtworks.paranamer.Paranamer;
-import com.google.gson.Gson;
-
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
+import java.util.*;
 
 public class Utils {
+    // Static instances for parameter name resolution and JSON conversion
     private static final Paranamer paranamer = new CachingParanamer();
     private static final Gson gson = new Gson();
 
+    // Converts an object to its JSON representation
     public static String convertToJson(Object object) {
         return gson.toJson(object);
     }
 
+    // Extracts the file name without its extension
     public static String getFileNameWithoutExtension(String fileName, String extension) {
-        return fileName.substring(0, (fileName.length() - extension.length()) - 1);
+        return fileName.substring(0, fileName.length() - extension.length() - 1);
     }
 
-    // Recuperer le mapping correspondant a une URL
+    // Retrieves the mapping for a given URL from the URL mappings
     public static Mapping getMappingForUrl(String url, HashMap<String, Mapping> urlMappings) {
         String cleanUrl = url.split("\\?")[0];
         return new Mapping().findMappingForUrl(urlMappings, cleanUrl);
     }
 
-    // Preparer les parametres de la methode en fonction des annotations
-    public static List<Object> prepareMethodParameters(Object controllerInstance, Method method, HttpServletRequest request, HttpServletResponse response) 
+    // Invokes the method mapped to the given URL
+    public static void invokeMappedMethod(String controllerPackage, Mapping mapping, HttpServletRequest request, HttpServletResponse response)
             throws Exception {
-        
-        List<Object> methodParameters = new ArrayList<>();
-        String[] paramNames = paranamer.lookupParameterNames(method); // Recuperer les noms des parametres (si disponibles)
-        List<Parameter> parameters = Arrays.asList(method.getParameters());
+        String requestVerb = request.getMethod();
+        if (!mapping.getVerb().equalsIgnoreCase(requestVerb)) {
+            throw new Exception("Invalid HTTP method. Expected " + mapping.getVerb() + " but got " + requestVerb);
+        }
+        Class<?> controllerClass = Class.forName(controllerPackage + "." + mapping.getClassName());
+        Method method = Mapping.findAnnotatedMethod(controllerClass, mapping.getMethodName(), mapping.getVerb());
+        if (method == null) {
+            throw new Exception("Method not found for mapping: " + mapping.getMethodName());
+        }
+        Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
+        Map<String, String> errors = new HashMap<>();
 
-        for (Parameter param : parameters) {
-            Class<?> paramType = param.getType();
-            String paramName = Arrays.asList(paramNames).contains(param.getName()) ? param.getName() : null;
+        // Check if the method has a FormView annotation and set the form view name
+        String formViewName = method.isAnnotationPresent(FormView.class) ? method.getAnnotation(FormView.class).value() : null;
+        request.setAttribute("formViewName", formViewName);
 
-            // Gestion des sessions
-            if (paramType == MySession.class) {
-                methodParameters.add(new MySession(request.getSession()));
-            }
-            // Gestion de fichier (Part)
-            else if (Part.class.isAssignableFrom(paramType)) {
-                Param paramAnnotation = param.getAnnotation(Param.class);
-                paramName = paramAnnotation != null ? paramAnnotation.name() : paramName;
-                Part part = request.getPart(paramName);
-                if (part != null) {
-                    if (part.getSize() > 0) {
-                        methodParameters.add(part);
-                    } else {
-                        throw new Exception("The required file parameter " + paramName + " is empty.");
-                    }
-                } else {
-                    throw new Exception("The required file parameter " + paramName + " is missing.");
-                }
-            }
-            // Gestion des parametres annotes avec @Param
-            else if (param.isAnnotationPresent(Param.class)) {
-                Param paramAnnotation = param.getAnnotation(Param.class);
-                paramName = paramAnnotation.name();
-                String paramValue = request.getParameter(paramName);
-                methodParameters.add(Utils.convertType(paramType, paramValue));
-            }
-            // Gestion des parametres annotes avec @ParamObject
-            else if (param.isAnnotationPresent(ParamObject.class)) {
-                Object paramObject = processParamObject(paramType, request);
-                methodParameters.add(paramObject);
-            }
-            // Gestion des autres parametres
-            else {
-                String paramValue = paramName != null ? request.getParameter(paramName) : null;
-                methodParameters.add(Utils.convertType(paramType, paramValue));
+        // Collect input values from the request parameters
+        Map<String, String> inputValues = new HashMap<>();
+        Enumeration<String> parameterNames = request.getParameterNames();
+        while (parameterNames.hasMoreElements()) {
+            String key = parameterNames.nextElement();
+            String[] values = request.getParameterValues(key);
+            if (values != null && values.length > 0) {
+                inputValues.put(key, values[0]);
             }
         }
-        return methodParameters;
+
+        // Prepare method parameters
+        List<Object> methodParameters;
+        try {
+            methodParameters = prepareMethodParameters(controllerInstance, method, request, response, errors);
+        } catch (Exception e) {
+            HttpSession session = request.getSession();
+            session.setAttribute("errors", errors);
+            session.setAttribute("inputValues", inputValues);
+            response.sendRedirect(request.getContextPath() + "/" + formViewName);
+            return;
+        }
+
+        // Invoke the method and handle the result
+        Object result = method.invoke(controllerInstance, methodParameters.toArray());
+        if (method.isAnnotationPresent(JSON.class)) {
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write(convertToJson(result));
+        } else if (result instanceof String) {
+            response.getWriter().println("Method executed: " + result);
+        } else if (result instanceof ModelView) {
+            ModelView mv = (ModelView) result;
+            mv.showData();
+            if (mv.isRedirect()) {
+                response.sendRedirect(mv.getUrl());
+            } else {
+                mv.forwardToView(request, response);
+            }
+        }
     }
 
+    // Prepares the parameters for the method invocation
+    public static List<Object> prepareMethodParameters(Object controllerInstance, Method method, HttpServletRequest request, HttpServletResponse response, Map<String, String> errors)
+            throws Exception {
+        List<Object> parametersList = new ArrayList<>();
+        String[] paramNames = paranamer.lookupParameterNames(method);
+        Parameter[] parameters = method.getParameters();
+
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter param = parameters[i];
+            Class<?> paramType = param.getType();
+            String paramName = (paramNames != null && paramNames.length > i) ? paramNames[i] : param.getName();
+
+            if (paramType == MySession.class) {
+                parametersList.add(new MySession(request.getSession()));
+            } else if (Part.class.isAssignableFrom(paramType)) {
+                Param paramAnnotation = param.getAnnotation(Param.class);
+                String name = (paramAnnotation != null) ? paramAnnotation.name() : paramName;
+                Part part = request.getPart(name);
+                if (part != null && part.getSize() > 0) {
+                    parametersList.add(part);
+                } else {
+                    throw new Exception("The required file parameter " + name + " is missing or empty.");
+                }
+            } else if (param.isAnnotationPresent(Param.class)) {
+                Param paramAnnotation = param.getAnnotation(Param.class);
+                String name = paramAnnotation.name();
+                String value = request.getParameter(name);
+                parametersList.add(convertType(paramType, value));
+            } else if (param.isAnnotationPresent(ParamObject.class)) {
+                Object obj = processParamObject(paramType, request, response, method, errors);
+                parametersList.add(obj);
+            } else {
+                String value = request.getParameter(paramName);
+                parametersList.add(convertType(paramType, value));
+            }
+        }
+        return parametersList;
+    }
+
+    // Converts a string value to the specified type
     public static Object convertType(Class<?> type, String value) {
         if (value == null || value.isEmpty()) {
             return null;
@@ -121,155 +161,91 @@ public class Utils {
         return value;
     }
 
-
-    public static void invokeMappedMethod(String controllerPackage, Mapping mapping, HttpServletRequest request, HttpServletResponse response)
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException, IOException, Exception {
-
-        // Verifier si le verbe HTTP correspond
-        String requestVerb = request.getMethod(); // Recupere "GET" ou "POST"
-        if (!mapping.getVerb().equalsIgnoreCase(requestVerb)) {
-            throw new Exception("Invalid HTTP method. Expected " + mapping.getVerb() + " but got " + requestVerb);
-        }
-
-        Class<?> controllerClass = Class.forName(controllerPackage + "." + mapping.getClassName());
-        Method method = Mapping.findAnnotatedMethod(controllerClass, mapping.getMethodName(), mapping.getVerb());
-
-        if (method == null) {
-            throw new Exception("Method not found for mapping: " + mapping.getMethodName());
-        }
-
-        Object controllerInstance = controllerClass.getDeclaredConstructor().newInstance();
-
-        // Preparer les parametres de la methode
-        List<Object> methodParameters = prepareMethodParameters(controllerInstance, method, request, response);
-        
-
-        // Executer la methode
-        Object result = method.invoke(controllerInstance, methodParameters.toArray());
-
-        // Verifier si la methode est annotee avec @JSON
-        if (method.isAnnotationPresent(JSON.class)) {
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            String jsonResponse = Utils.convertToJson(result); // Convertir l'objet en JSON
-            response.getWriter().write(jsonResponse);
-        }
-        // Traiter le resultat de la methode
-        else if (result instanceof String) {
-            response.getWriter().println("Method executed: " + result.toString());
-        } else if (result instanceof ModelView) {
-            ModelView mv = (ModelView) result;
-            mv.showData();
-            
-            if (mv.isRedirect()) {
-                // Effectuer une redirection HTTP
-                response.sendRedirect(mv.getUrl());
-            } else {
-                // Effectuer un forward normal vers la vue
-                mv.forwardToView(request, response);
-            }
-        }
-    }
-
-
-    // Methode pour remplir les objets annotes avec @ParamObject
-    private static Object processParamObject(Class<?> paramType, HttpServletRequest request) throws Exception {
+    // Processes an object annotated with ParamObject
+    private static Object processParamObject(Class<?> paramType, HttpServletRequest request, HttpServletResponse response, Method method, Map<String, String> errors)
+            throws Exception {
         Object instance = paramType.getDeclaredConstructor().newInstance();
 
         for (Field field : paramType.getDeclaredFields()) {
             field.setAccessible(true);
-            String fieldName = field.isAnnotationPresent(FieldName.class)
-                    ? field.getAnnotation(FieldName.class).value()
-                    : field.getName(); // Utiliser le nom du champ s'il n'est pas annote
-
+            String fieldName = field.isAnnotationPresent(FieldName.class) ? field.getAnnotation(FieldName.class).value() : field.getName();
             String paramValue = request.getParameter(fieldName);
-
-            // Valider le champ
-            validateField(field, paramValue);
-
-            if (paramValue != null) {
-                Object convertedValue = Utils.convertType(field.getType(), paramValue);
-                field.set(instance, convertedValue);
+            try {
+                validateField(field, paramValue);
+            } catch (Exception e) {
+                errors.put(fieldName, e.getMessage());
             }
         }
 
+        if (!errors.isEmpty()) {
+            throw new Exception(errors.toString());
+        }
+
+        for (Field field : paramType.getDeclaredFields()) {
+            field.setAccessible(true);
+            String fieldName = field.isAnnotationPresent(FieldName.class) ? field.getAnnotation(FieldName.class).value() : field.getName();
+            String paramValue = request.getParameter(fieldName);
+            if (paramValue != null) {
+                try {
+                    Object convertedValue = convertType(field.getType(), paramValue);
+                    field.set(instance, convertedValue);
+                } catch (Exception e) {
+                    errors.put(fieldName, e.getMessage());
+                }
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new Exception(errors.toString());
+        }
         return instance;
     }
 
+    // Validates a field based on its annotations
     private static void validateField(Field field, String value) throws Exception {
-        if (value == null || value.isEmpty()) {
-            if (field.isAnnotationPresent(Required.class)) {
-                throw new Exception("The field " + field.getName() + " is required.");
-            }
-            return;
+        if ((value == null || value.isEmpty()) && field.isAnnotationPresent(Required.class)) {
+            throw new Exception("The field " + field.getName() + " is required.");
         }
-
-        for (Annotation annotation : field.getAnnotations()) {
-            if (annotation instanceof Email && !Validator.isValidEmail(value)) {
-                throw new Exception("The field " + field.getName() + " must be a valid email.");
-            }
-            if (annotation instanceof Date && !Validator.isValidDate(value)) {
-                throw new Exception("The field " + field.getName() + " must be a valid date.");
-            }
-            if (annotation instanceof Numeric && !Validator.isNumeric(value)) {
-                throw new Exception("The field " + field.getName() + " must be numeric.");
+        if (value != null && !value.isEmpty()) {
+            for (Annotation annotation : field.getAnnotations()) {
+                if (annotation instanceof Email && !Validator.isValidEmail(value)) {
+                    throw new Exception("The field " + field.getName() + " must be a valid email.");
+                }
+                if (annotation instanceof Date && !Validator.isValidDate(value)) {
+                    throw new Exception("The field " + field.getName() + " must be a valid date.");
+                }
+                if (annotation instanceof Numeric && !Validator.isNumeric(value)) {
+                    throw new Exception("The field " + field.getName() + " must be numeric.");
+                }
             }
         }
     }
 
+    // Handles errors by sending an HTML response with the error details
     public static void handleError(HttpServletResponse response, Exception e) throws IOException {
         response.setContentType("text/html");
-        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);  // Code d'erreur 500
-
-        String errorMessage = "<!DOCTYPE html>";
-        errorMessage += "<html lang=\"fr\">";
-        errorMessage += "<head>";
-        errorMessage += "<meta charset=\"UTF-8\">";
-        errorMessage += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
-        errorMessage += "<title>Erreur du serveur</title>";
-
-        // Ajouter du CSS
-        errorMessage += "<style>";
-        errorMessage += "body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; color: #333; }";
-        errorMessage += "header { background-color: #ff4f5a; color: white; padding: 10px 20px; text-align: center; }";
-        errorMessage += "section { margin: 20px; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }";
-        errorMessage += "h1 { font-size: 2em; }";
-        errorMessage += "p { line-height: 1.6; }";
-        errorMessage += "pre { background-color: #333; color: #fff; padding: 15px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }";
-        errorMessage += "footer { text-align: center; font-size: 0.8em; padding: 10px 0; background-color: #eee; margin-top: 20px; }";
-        errorMessage += "</style>";
-
-        errorMessage += "</head>";
-        errorMessage += "<body>";
-
-        // En-tete
-        errorMessage += "<header><h1>Erreur interne du serveur</h1></header>";
-
-        // Contenu de la page d'erreur
-        errorMessage += "<section>";
-        errorMessage += "<h2>Une erreur s'est produite :</h2>";
-        errorMessage += "<p><strong>Message :</strong> " + e.getMessage() + "</p>";
-        errorMessage += "<p><strong>Cause :</strong> " + (e.getCause() != null ? e.getCause().toString() : "Aucune cause specifique") + "</p>";
-        errorMessage += "<h3>Trace de l'exception :</h3><pre>";
-
-        // Ajouter la trace de l'exception
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        StringBuilder errorMessage = new StringBuilder();
+        errorMessage.append("<!DOCTYPE html><html lang=\"en\"><head>")
+                    .append("<meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">")
+                    .append("<title>Server Error</title>")
+                    .append("<style>body { font-family: Arial; background-color: #f4f4f9; color: #333; }")
+                    .append("header { background-color: #ff4f5a; color: white; padding: 10px; text-align: center; }")
+                    .append("section { margin: 20px; padding: 20px; background: white; border-radius: 8px; ")
+                    .append("box-shadow: 0 2px 5px rgba(0,0,0,0.1); } pre { background: #333; color: #fff; padding: 15px; border-radius: 4px; }")
+                    .append("footer { text-align: center; font-size: 0.8em; padding: 10px; background: #eee; margin-top: 20px; }</style>")
+                    .append("</head><body>")
+                    .append("<header><h1>Internal Server Error</h1></header><section>")
+                    .append("<h2>An error occurred:</h2>")
+                    .append("<p><strong>Message:</strong> ").append(e.getMessage()).append("</p>")
+                    .append("<p><strong>Cause:</strong> ").append(e.getCause() != null ? e.getCause().toString() : "No specific cause").append("</p>")
+                    .append("<h3>Exception trace:</h3><pre>");
         for (StackTraceElement element : e.getStackTrace()) {
-            errorMessage += element.toString() + "<br/>";
+            errorMessage.append(element.toString()).append("<br/>");
         }
-
-        errorMessage += "</pre>";
-        errorMessage += "</section>";
-
-        // Footer
-        errorMessage += "<footer><p>&copy; " + java.time.LocalDate.now().getYear() + " Framework Lohataona XD.</p></footer>";
-
-        errorMessage += "</body>";
-        errorMessage += "</html>";
-
-        // Afficher l'erreur dans la reponse
+        errorMessage.append("</pre></section>")
+                    .append("<footer><p>&copy; ").append(java.time.LocalDate.now().getYear())
+                    .append(" Framework Lohataona XD.</p></footer></body></html>");
         response.getWriter().println(errorMessage);
     }
-
-
-
 }
