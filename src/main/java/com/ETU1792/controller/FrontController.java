@@ -64,23 +64,25 @@ public class FrontController extends HttpServlet {
                 // Verifier les annotations d'authentification et de role
                 Class<?> controllerClass = Class.forName(controllerPackage + "." + mapping.getClassName());
                 Method method = Mapping.findAnnotatedMethod(controllerClass, mapping.getMethodName(), mapping.getVerb());
-    
-                if (method.isAnnotationPresent(Authentified.class)) {
+
+                // Verifier l'annotation @Authentified au niveau de la classe et de la methode
+                if (controllerClass.isAnnotationPresent(Authentified.class) || method.isAnnotationPresent(Authentified.class)) {
                     HttpSession session = request.getSession(false);
                     if (session == null || session.getAttribute("auth") == null) {
                         throw new Exception("User not authenticated.");
                     }
                 }
-    
-                if (method.isAnnotationPresent(Role.class)) {
+
+                // Verifier l'annotation @Role au niveau de la classe et de la methode
+                Role classRole = controllerClass.getAnnotation(Role.class);
+                Role methodRole = method.getAnnotation(Role.class);
+                if (classRole != null || methodRole != null) {
                     HttpSession session = request.getSession(false);
                     if (session == null || session.getAttribute("auth") == null) {
                         throw new Exception("User not authenticated.");
                     }
                     String userRole = (String) session.getAttribute("role");
-                    System.out.println("User role: " + userRole);
-                    String[] requiredRoles = method.getAnnotation(Role.class).value();
-                    System.out.println("Required roles: " + Arrays.toString(requiredRoles));
+                    String[] requiredRoles = classRole != null ? classRole.value() : methodRole.value();
                     boolean hasRole = Arrays.stream(requiredRoles).anyMatch(role -> role.equals(userRole));
                     if (!hasRole) {
                         throw new Exception("User does not have the required role.");
