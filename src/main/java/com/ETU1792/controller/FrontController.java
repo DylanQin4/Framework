@@ -58,20 +58,20 @@ public class FrontController extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 throw new Exception("No mapping found for URL : " + request.getRequestURI());
             }
-
+    
             String controllerPackage = getInitParameter("controllerPackage");
             try {
-                // Vérifier les annotations d'authentification et de rôle
+                // Verifier les annotations d'authentification et de role
                 Class<?> controllerClass = Class.forName(controllerPackage + "." + mapping.getClassName());
                 Method method = Mapping.findAnnotatedMethod(controllerClass, mapping.getMethodName(), mapping.getVerb());
-
+    
                 if (method.isAnnotationPresent(Authentified.class)) {
                     HttpSession session = request.getSession(false);
                     if (session == null || session.getAttribute("auth") == null) {
                         throw new Exception("User not authenticated.");
                     }
                 }
-
+    
                 if (method.isAnnotationPresent(Role.class)) {
                     HttpSession session = request.getSession(false);
                     if (session == null || session.getAttribute("auth") == null) {
@@ -86,8 +86,8 @@ public class FrontController extends HttpServlet {
                         throw new Exception("User does not have the required role.");
                     }
                 }
-
-                // Exécuter la méthode mappée
+    
+                // Executer la methode mappee
                 Utils.invokeMappedMethod(controllerPackage, mapping, request, response);
             } catch (Exception e) {
                 throw new ServletException("Error while executing method : " + e.getMessage(), e);
