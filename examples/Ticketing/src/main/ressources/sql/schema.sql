@@ -92,6 +92,7 @@ CREATE TABLE users(
    PRIMARY KEY(id),
    FOREIGN KEY(role_id) REFERENCES role(id)
 );
+ALTER TABLE users ADD COLUMN username VARCHAR(100);
 
 CREATE TABLE reservation(
    id SERIAL,

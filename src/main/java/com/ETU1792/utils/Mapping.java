@@ -47,36 +47,38 @@ public class Mapping {
 
     public HashMap<String, Mapping> generateMappings(ArrayList<Class<?>> controllers) {
         HashMap<String, Mapping> urlMappings = new HashMap<>();
-
+    
         for (Class<?> controllerClass : controllers) {
             Method[] methods = controllerClass.getDeclaredMethods();
-
+    
             for (Method method : methods) {
                 // Gestion de l'annotation @GET
                 if (method.isAnnotationPresent(GET.class)) {
                     Annotation annotation = method.getAnnotation(GET.class);
                     String url = ((GET) annotation).value();
+                    String key = "GET:" + url;
                     System.out.println("Found @GET mapping for URL: " + url + " in method: " + method.getName());
-
-                    if (!urlMappings.containsKey(url)) {
+    
+                    if (!urlMappings.containsKey(key)) {
                         Mapping mapping = new Mapping(controllerClass.getSimpleName(), method.getName(), "GET");
-                        urlMappings.put(url, mapping);
+                        urlMappings.put(key, mapping);
                     } else {
-                        return null; // Conflit dans les URL
+                        throw new IllegalArgumentException("Duplicate @GET mapping detected for URL: " + url + " in method: " + method.getName());
                     }
                 }
-
+    
                 // Gestion de l'annotation @POST
                 if (method.isAnnotationPresent(POST.class)) {
                     Annotation annotation = method.getAnnotation(POST.class);
                     String url = ((POST) annotation).value();
+                    String key = "POST:" + url;
                     System.out.println("Found @POST mapping for URL: " + url + " in method: " + method.getName());
-
-                    if (!urlMappings.containsKey(url)) {
+    
+                    if (!urlMappings.containsKey(key)) {
                         Mapping mapping = new Mapping(controllerClass.getSimpleName(), method.getName(), "POST");
-                        urlMappings.put(url, mapping);
+                        urlMappings.put(key, mapping);
                     } else {
-                        return null; // Conflit dans les URL
+                        throw new IllegalArgumentException("Duplicate @POST mapping detected for URL: " + url + " in method: " + method.getName());
                     }
                 }
             }
@@ -85,7 +87,7 @@ public class Mapping {
     }
 
 
-    public Mapping findMappingForUrl(HashMap<String, Mapping> urlMappings, String url) {
+    public Mapping findMappingForUrl(HashMap<String, Mapping> urlMappings, String url, String requestMethod) {
         String[] pathSegments = url.split("/");
         String path = "";
 
@@ -95,8 +97,8 @@ public class Mapping {
             }
             path = pathSegments[i] + path;
 
-            if (urlMappings.containsKey(path)) {
-                return urlMappings.get(path);
+            if (urlMappings.containsKey(requestMethod + ":" + path)) {
+                return urlMappings.get(requestMethod + ":" + path);
             }
         }
         return null;
@@ -105,7 +107,7 @@ public class Mapping {
 
     // Trouver la methode annotee dans la classe
     public static Method findAnnotatedMethod(Class<?> clazz, String methodName, String verb) {
-        System.out.println("Searching for method: " + methodName + " with verb: " + verb + " in class: " + clazz.getName());
+        System.out.println("Searching for method: " + methodName + " with " + verb + " in class " + clazz.getName());
 
         for (Method method : clazz.getDeclaredMethods()) {
             // Verifiez si l'annotation correspond au verbe

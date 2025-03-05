@@ -53,7 +53,8 @@ public class FrontController extends HttpServlet {
 
     private void processRequest(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         try {
-            Mapping mapping = Utils.getMappingForUrl(request.getRequestURI(), this.getUrlMappings());
+            String requestMethod = request.getMethod();
+            Mapping mapping = Utils.getMappingForUrl(request.getRequestURI(), this.getUrlMappings(), requestMethod);
             if (mapping == null) {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 throw new Exception("No mapping found for URL : " + request.getRequestURI());

@@ -31,9 +31,9 @@ public class Utils {
     }
 
     // Retrieves the mapping for a given URL from the URL mappings
-    public static Mapping getMappingForUrl(String url, HashMap<String, Mapping> urlMappings) {
+    public static Mapping getMappingForUrl(String url, HashMap<String, Mapping> urlMappings, String requestMethod) {
         String cleanUrl = url.split("\\?")[0];
-        return new Mapping().findMappingForUrl(urlMappings, cleanUrl);
+        return new Mapping().findMappingForUrl(urlMappings, cleanUrl, requestMethod);
     }
 
     // Invokes the method mapped to the given URL
@@ -79,7 +79,12 @@ public class Utils {
         }
 
         // Invoke the method and handle the result
-        Object result = method.invoke(controllerInstance, methodParameters.toArray());
+        Object result;
+        try {
+            result = method.invoke(controllerInstance, methodParameters.toArray());
+        } catch(Exception e) {
+            throw new Exception(e.getMessage());
+        }
         if (method.isAnnotationPresent(JSON.class)) {
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");

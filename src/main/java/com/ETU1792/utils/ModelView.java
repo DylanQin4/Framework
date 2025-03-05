@@ -24,7 +24,7 @@ public class ModelView {
         for (Map.Entry<String, Object> data : this.getData().entrySet()) {
             request.setAttribute(data.getKey(), data.getValue());
         }
-        RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher("/WEB-INF/" + this.getUrl());
+        RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher(this.getUrl());
         dispatcher.forward(request, response);
     }
 
