@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 @MultipartConfig
 public class FrontController extends HttpServlet {
@@ -84,9 +85,26 @@ public class FrontController extends HttpServlet {
                     if (session == null || session.getAttribute("auth") == null) {
                         throw new Exception("User not authenticated.");
                     }
-                    String userRole = (String) session.getAttribute("role");
+                    Object roleAttribute = session.getAttribute("role");
+                    String[] userRoles;
+                
+                    if (roleAttribute instanceof String) {
+                        userRoles = new String[]{(String) roleAttribute};
+                    } else if (roleAttribute instanceof String[]) {
+                        userRoles = (String[]) roleAttribute;
+                    } else if (roleAttribute instanceof List<?>) {
+                        List<?> roleList = (List<?>) roleAttribute;
+                        if (roleList.isEmpty() || roleList.get(0) instanceof String) {
+                            userRoles = roleList.toArray(new String[0]);
+                        } else {
+                            throw new Exception("Invalid role attribute type.");
+                        }
+                    } else {
+                        throw new Exception("Invalid role attribute type.");
+                    }
+                
                     String[] requiredRoles = classRole != null ? classRole.value() : methodRole.value();
-                    boolean hasRole = Arrays.stream(requiredRoles).anyMatch(role -> role.equals(userRole));
+                    boolean hasRole = Arrays.stream(userRoles).anyMatch(userRole -> Arrays.stream(requiredRoles).anyMatch(role -> role.equals(userRole)));
                     if (!hasRole) {
                         throw new Exception("User does not have the required role.");
                     }
