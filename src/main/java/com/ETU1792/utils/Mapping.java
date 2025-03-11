@@ -57,13 +57,13 @@ public class Mapping {
                     Annotation annotation = method.getAnnotation(GET.class);
                     String url = ((GET) annotation).value();
                     String key = "GET:" + url;
-                    System.out.println("Found @GET mapping for URL: " + url + " in method: " + method.getName());
+                    System.out.println("Found @GET mapping for URL: " + url + " in method: " + method.getName() + ", key: " + key);
     
                     if (!urlMappings.containsKey(key)) {
                         Mapping mapping = new Mapping(controllerClass.getSimpleName(), method.getName(), "GET");
                         urlMappings.put(key, mapping);
                     } else {
-                        throw new IllegalArgumentException("Duplicate @GET mapping detected for URL: " + url + " in method: " + method.getName());
+                        throw new IllegalArgumentException("Duplicate @GET mapping detected for URL: " + url + " in method: " + method.getName() + ", key: " + key);
                     }
                 }
     
@@ -86,24 +86,34 @@ public class Mapping {
         return urlMappings;
     }
 
-
     public Mapping findMappingForUrl(HashMap<String, Mapping> urlMappings, String url, String requestMethod) {
+        // Verifiez si l'URL est vide ou correspond a la racine
+        if (url.isEmpty() || url.equals("/")) {
+            String key = requestMethod + ":";
+            if (urlMappings.containsKey(key)) {
+                return urlMappings.get(key);
+            }
+            return null;
+        }
+    
+        // Divise l'URL en segments en utilisant "/" comme delimiteur
         String[] pathSegments = url.split("/");
+        System.out.println("pathSegments length: " + pathSegments.length);
         String path = "";
-
+    
         for (int i = pathSegments.length - 1; i >= 0; i--) {
             if (i < pathSegments.length - 1) {
                 path = "/" + path;
             }
             path = pathSegments[i] + path;
-
+            System.out.println("Path: " + path);
+    
             if (urlMappings.containsKey(requestMethod + ":" + path)) {
                 return urlMappings.get(requestMethod + ":" + path);
             }
         }
-        return null;
+        return null; // Aucun mapping trouve
     }
-
 
     // Trouver la methode annotee dans la classe
     public static Method findAnnotatedMethod(Class<?> clazz, String methodName, String verb) {
