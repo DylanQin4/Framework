@@ -3,6 +3,9 @@
     String message = "";
     if(request.getAttribute("message") != null) message = (String) request.getAttribute("message");
 
+    String errors = "";
+    if(request.getAttribute("errors") != null) errors = (String) request.getAttribute("errors");
+
 %>
 <html lang="fr">
 <head>
@@ -31,12 +34,23 @@
 <body>
 <div class="login-container text-center">
     <h2 class="mb-4">Connexion</h2>
-    <a href="test">Tsy Mila</a>
-    <p><%=message%></p>
+
+    <c:if test="${not empty errors}">
+        <div style="color: red;">
+            ${errors}
+        </div>
+    </c:if>
+
+    <c:if test="${not empty message}">
+        <div style="color: green;">
+            ${message}
+        </div>
+    </c:if>
+
     <form action="login" method="post">
         <div class="mb-3">
             <label for="username" class="form-label">Nom d'utilisateur</label>
-            <input type="text" class="form-control" id="username" name="email" required value="admin@exampl.com">
+            <input type="text" class="form-control" id="username" name="email" required value="admin@example.com">
         </div>
         <div class="mb-3">
             <label for="password" class="form-label">Mot de passe</label>

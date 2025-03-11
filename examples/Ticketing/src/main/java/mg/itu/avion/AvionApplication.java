@@ -1,7 +1,7 @@
 package mg.itu.avion;
 
-import mg.itu.avion.entity.User;
-import mg.itu.avion.repository.UserRepository;
+import mg.itu.avion.user.User;
+import mg.itu.avion.user.UserRepository;
 
 public class AvionApplication {
 

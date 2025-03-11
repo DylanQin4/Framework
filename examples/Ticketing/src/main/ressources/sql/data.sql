@@ -31,9 +31,9 @@ INSERT INTO g_reservation (label,valeur) VALUES
         ('Annulation Reservation',8);
 
 
-INSERT INTO role (label) VALUES
-        ('client'),
-        ('admin');
+INSERT INTO roles (label) VALUES
+        ('USER'),
+        ('ADMIN');
 
 
 INSERT INTO avion (nom, dt_fabrication, modele_id) VALUES
@@ -109,10 +109,18 @@ INSERT INTO siege_avion (nb_siege, avion_id, type_siege_id) VALUES
 
         (80, 30, 1), (10, 30, 2);  -- Bombardier CRJ900 - Sky Runner
 
-INSERT INTO users (email, pwd, role_id) VALUES
-        ('admin@example.com', 'admin123', 1), -- Admin
-        ('client1@example.com', 'client123', 2), -- Client 1
-        ('client2@example.com', 'client123', 2), -- Client 2
-        ('client3@example.com', 'client123', 2), -- Client 3
-        ('client4@example.com', 'client123', 2); -- Client 4
+INSERT INTO users (email, pwd) VALUES
+        ('admin@example.com', 'admin123'),
+        ('client1@example.com', 'client123'),
+        ('client2@example.com', 'client123'),
+        ('client3@example.com', 'client123'),
+        ('client4@example.com', 'client123');
+
+INSERT INTO users_roles (user_id, role_id) VALUES
+        (1, 2),
+        (1, 1),
+        (2, 1),
+        (3, 1),
+        (4, 1),
+        (5, 1);
 

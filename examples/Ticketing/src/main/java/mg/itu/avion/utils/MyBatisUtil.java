@@ -1,10 +1,7 @@
 package mg.itu.avion.utils;
 
-import javax.sql.DataSource;
-
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Getter;
-import org.apache.ibatis.datasource.pooled.PooledDataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -26,8 +23,8 @@ public class MyBatisUtil {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         Configuration configuration = new Configuration(environment);
 
-        // Enregistrer tes mappers annotés ici (par exemple, UserMapper)
-        configuration.addMapper(mg.itu.avion.mapper.UserMapper.class);
+        configuration.addMapper(mg.itu.avion.user.UserMapper.class);
+        configuration.addMapper(mg.itu.avion.user.RoleMapper.class);
 
         sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
     }

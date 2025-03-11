@@ -6,7 +6,7 @@ CREATE TABLE ville(
 
 CREATE TABLE type_siege(
    id SMALLSERIAL,
-   label VARCHAR(50) ,
+   label VARCHAR(50),
    PRIMARY KEY(id)
 );
 
@@ -23,7 +23,7 @@ CREATE TABLE g_reservation(
    PRIMARY KEY(id)
 );
 
-CREATE TABLE role(
+CREATE TABLE roles(
    id SMALLSERIAL,
    label VARCHAR(50)  NOT NULL,
    PRIMARY KEY(id)
@@ -93,6 +93,14 @@ CREATE TABLE users(
    FOREIGN KEY(role_id) REFERENCES role(id)
 );
 ALTER TABLE users ADD COLUMN username VARCHAR(100);
+
+CREATE TABLE users_roles(
+   user_id INTEGER NOT NULL,
+   role_id INTEGER NOT NULL,
+   PRIMARY KEY(user_id, role_id),
+   FOREIGN KEY(user_id) REFERENCES users(id),
+   FOREIGN KEY(role_id) REFERENCES role(id)
+);
 
 CREATE TABLE reservation(
    id SERIAL,
