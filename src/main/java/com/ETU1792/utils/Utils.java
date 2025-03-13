@@ -71,6 +71,7 @@ public class Utils {
         try {
             methodParameters = prepareMethodParameters(controllerInstance, method, request, response, errors);
         } catch (Exception e) {
+            e.printStackTrace();
             HttpSession session = request.getSession();
             session.setAttribute("errors", errors);
             session.setAttribute("inputValues", inputValues);
@@ -195,6 +196,7 @@ public class Utils {
                     Object convertedValue = convertType(field.getType(), paramValue);
                     field.set(instance, convertedValue);
                 } catch (Exception e) {
+                    e.printStackTrace();
                     errors.put(fieldName, e.getMessage());
                 }
             }

@@ -47,16 +47,20 @@
         </div>
     </c:if>
 
-    <form action="login" method="post">
+    <form action="login" method="post" class="text-start">
         <div class="mb-3">
-            <label for="username" class="form-label">Nom d'utilisateur</label>
-            <input type="text" class="form-control" id="username" name="email" required value="admin@example.com">
+            <label for="email" class="form-label">Email</label>
+            <input type="text" class="form-control" id="email" name="email" required value="admin@example.com">
         </div>
         <div class="mb-3">
             <label for="password" class="form-label">Mot de passe</label>
             <input type="password" class="form-control" id="password" name="pwd" required value="admin123">
         </div>
         <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+        
+        <div class="mt-3 text-center">
+            Vous n'êtes pas inscrit ?  <a href="registration">Créer un compte</a>
+        </div>
     </form>
 </div>
 </body>

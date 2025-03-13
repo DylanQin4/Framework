@@ -6,6 +6,7 @@ import com.ETU1792.utils.MySession;
 
 import mg.itu.avion.user.User;
 import mg.itu.avion.user.UserRepository;
+import mg.itu.avion.user.UserRequest;
 
 @Controller
 public class UsersController {
@@ -48,6 +49,43 @@ public class UsersController {
         ModelView mv = new ModelView("");
         mv.setIsRedirect(true);
         return mv;
+    }
+
+    @GET("registration")
+    public ModelView getViewRegister() {
+        return new ModelView("/auth/register.jsp");
+    }
+
+    @POST("register")
+    @FormView("registration")
+    public ModelView handleRegister(@ParamObject UserRequest userRequest, MySession session) {
+        // delete errors and inputValues in HttpSession
+        session.delete("errors");
+        session.delete("inputValues");
+
+        UserRepository repository = new UserRepository();
+        User existUser = repository.getUserByEmailOrUsername(userRequest.getEmail(), userRequest.getUsername());
+        if (existUser != null) {
+            ModelView mv = new ModelView("/auth/register.jsp");
+            session.add("inputValues", userRequest);
+            mv.addObject("error", "Email ou Nom d'utilisateur deja utilise");
+            return mv;
+        }
+        User user = repository.saveUser(userRequest);
+        if (user == null) {
+            ModelView mv = new ModelView("/auth/register.jsp");
+            mv.addObject("error", "Erreur lors de l'enregistrement");
+            return mv;
+        }
+        
+        try {
+            return login(userRequest.getEmail(), userRequest.getPwd(), session);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ModelView mv = new ModelView("/auth/register.jsp");
+            mv.addObject("error", "Erreur lors de l'enregistrement");
+            return mv;
+        }
     }
 
     @GET(value = "logout")

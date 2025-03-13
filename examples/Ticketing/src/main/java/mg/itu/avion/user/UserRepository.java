@@ -47,5 +47,36 @@ public class UserRepository {
         }
     }
 
+    public User saveUser(UserRequest userRequest) {
+        SqlSession session = sqlSessionFactory.openSession();
+        try {
+            UserMapper userMapper = session.getMapper(UserMapper.class);
+            userMapper.saveUser(userRequest);
+            User user = userMapper.findByEmailAndPassword(userRequest.getEmail(), userRequest.getPwd());
+            session.commit();
+            return user;
+        } catch (Exception e) {
+            e.printStackTrace();
+            session.rollback();
+            return null;
+        } finally {
+            session.close();
+        }
+    }
+
+    public User getUserByEmailOrUsername(String email, String username) {
+        SqlSession session = sqlSessionFactory.openSession();
+        try {
+            UserMapper userMapper = session.getMapper(UserMapper.class);
+            User user = userMapper.findByEmailOrUsername(email, username);
+            return user;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        } finally {
+            session.close();
+        }
+    }
+
 
 }
