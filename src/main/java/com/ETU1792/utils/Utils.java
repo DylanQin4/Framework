@@ -1,7 +1,7 @@
 package com.ETU1792.utils;
 
 import javax.servlet.http.*;
-import javax.servlet.http.Part;
+
 import com.ETU1792.annotation.*;
 import com.ETU1792.annotation.validation.Date;
 import com.ETU1792.annotation.validation.Email;
@@ -83,9 +83,17 @@ public class Utils {
         Object result;
         try {
             result = method.invoke(controllerInstance, methodParameters.toArray());
-        } catch(Exception e) {
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            cause.printStackTrace();
+            System.err.println("❌ Error in the method " + method.getName() + " : " + cause.getMessage());
+            throw new Exception(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("❌ Problem during the excecuction " + method.getName() + " : " + e.getMessage());
             throw new Exception(e.getMessage());
         }
+        
         if (method.isAnnotationPresent(JSON.class)) {
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");

@@ -113,6 +113,7 @@ public class FrontController extends HttpServlet {
                 // Executer la methode mappee
                 Utils.invokeMappedMethod(controllerPackage, mapping, request, response);
             } catch (Exception e) {
+                e.printStackTrace();
                 throw new ServletException("Error while executing method : " + e.getMessage(), e);
             }
         } catch(Exception e) {
