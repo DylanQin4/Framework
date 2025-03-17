@@ -1,0 +1,114 @@
+package mg.itu.avion.controller;
+
+import com.ETU1792.annotation.Authentified;
+import com.ETU1792.annotation.Controller;
+import com.ETU1792.annotation.GET;
+import com.ETU1792.annotation.POST;
+import com.ETU1792.annotation.Param;
+import com.ETU1792.annotation.Role;
+import com.ETU1792.utils.ModelView;
+
+import java.util.List;
+
+import mg.itu.avion.airplane.AirplaneRepository;
+import mg.itu.avion.airplane.AirplaneService;
+import mg.itu.avion.city.CityRepository;
+import mg.itu.avion.city.CityService;
+import mg.itu.avion.flight.*;
+import mg.itu.avion.utils.MyBatisUtil;
+
+@Controller
+@Authentified
+@Role("ADMIN")
+public class FlightController {
+    
+    private FlightService flightService;
+    private AirplaneService airplaneService;
+    private CityService cityService;
+    
+    public FlightController() {
+        this.flightService = new FlightService(new FlightRepository(MyBatisUtil.getSqlSessionFactory()));
+        this.airplaneService = new AirplaneService(new AirplaneRepository(MyBatisUtil.getSqlSessionFactory()));
+        this.cityService = new CityService(new CityRepository(MyBatisUtil.getSqlSessionFactory()));
+    }
+    
+    @GET("flights")
+    public ModelView getFlights() {
+        List<Flight> flights = new FlightService(new FlightRepository(MyBatisUtil.getSqlSessionFactory())).getAllFlights();
+        ModelView mv = new ModelView("/admin/flights/index.jsp");
+        mv.addObject("flights", flights);
+        return mv;
+    }
+    
+    @GET("flights/add")
+    public ModelView getAddFlight() {
+        ModelView mv = new ModelView("/admin/flights/add.jsp");
+        mv.addObject("airplanes", airplaneService.getAllAirplanes());
+        mv.addObject("cities", cityService.getAllCities());
+        return mv;
+    }
+    
+    @POST("flights/add")
+    public ModelView addFlight(
+            @Param(name = "flightNumber") String flightNumber,
+            @Param(name = "departureTime") String departureTime,
+            @Param(name = "arrivalTime") String arrivalTime,
+            @Param(name = "reservationCutoffHours") String reservationCutoffHours,
+            @Param(name = "cancellationCutoffHours") String cancellationCutoffHours,
+            @Param(name = "airplaneId") Integer airplaneId,
+            @Param(name = "departureCityId") Integer departureCityId,
+            @Param(name = "arrivalCityId") Integer arrivalCityId) {
+        
+        flightService.createFlight(
+            flightNumber, departureTime, arrivalTime, 
+            Integer.parseInt(reservationCutoffHours), 
+            Integer.parseInt(cancellationCutoffHours),
+            airplaneId, 
+            departureCityId, 
+            arrivalCityId
+        );
+        
+        return new ModelView("redirect:/flights");
+    }
+    
+    @GET("flights/edit")
+    public ModelView getEditFlight(@Param(name = "id") String id) {
+        Flight flight = flightService.getFlightById(id);
+        
+        ModelView mv = new ModelView("/admin/flights/edit.jsp");
+        mv.addObject("flight", flight);
+        mv.addObject("airplanes", airplaneService.getAllAirplanes());
+        mv.addObject("cities", cityService.getAllCities());
+        return mv;
+    }
+    
+    @POST("flights/edit")
+    public ModelView editFlight(
+            @Param(name = "id") String id,
+            @Param(name = "flightNumber") String flightNumber,
+            @Param(name = "departureTime") String departureTime,
+            @Param(name = "arrivalTime") String arrivalTime,
+            @Param(name = "reservationCutoffHours") String reservationCutoffHours,
+            @Param(name = "cancellationCutoffHours") String cancellationCutoffHours,
+            @Param(name = "airplaneId") Integer airplaneId,
+            @Param(name = "departureCityId") Integer departureCityId,
+            @Param(name = "arrivalCityId") Integer arrivalCityId) {
+            
+        flightService.updateFlight(
+            id, flightNumber, departureTime, arrivalTime, 
+            Integer.parseInt(reservationCutoffHours), 
+            Integer.parseInt(cancellationCutoffHours),
+            airplaneId, 
+            departureCityId, 
+            arrivalCityId
+        );
+        
+        return new ModelView("redirect:/flights");
+    }
+    
+    @GET("flights/delete")
+    public ModelView deleteFlight(@Param(name = "id") String id) {
+        flightService.deleteFlight(id);
+        return new ModelView("redirect:/flights");
+    }
+}

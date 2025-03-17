@@ -13,7 +13,7 @@ public class UsersController {
     @GET("")
     public ModelView getViewLogin(MySession mySession){
         if (mySession.get("auth") != null) {
-            ModelView mv = new ModelView("dashboard");
+            ModelView mv = new ModelView("flights");
             mv.setIsRedirect(true);
             return mv;
         }

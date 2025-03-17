@@ -55,7 +55,7 @@ CREATE TYPE class_type AS ENUM ('ECONOMY', 'BUSINESS');
 DROP TABLE IF EXISTS class CASCADE;
 CREATE TABLE class (
     id SERIAL PRIMARY KEY,
-    class class_type NOT NULL
+    label class_type NOT NULL
 );
 
 -- Table airplanes

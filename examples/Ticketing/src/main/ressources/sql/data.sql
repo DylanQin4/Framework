@@ -11,6 +11,9 @@ INSERT INTO users (email, username, pwd) VALUES
     ('user2@example.com', 'User Two', 'password2'),
     ('admin@example.com', 'Admin', 'admin123');
 
+INSERT INTO user_roles (user_id, role_id) VALUES
+    (3, 2);
+
 -- Insertion des avions
 INSERT INTO airplanes (model, total_seats) VALUES
     ('Boeing 737', 150),
