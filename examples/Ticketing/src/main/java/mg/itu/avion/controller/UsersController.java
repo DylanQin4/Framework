@@ -24,7 +24,7 @@ public class UsersController {
 
     @GET("login")
     public ModelView login() {
-        ModelView mv = new ModelView("/login.jsp");
+        ModelView mv = new ModelView("/auth/login.jsp");
         return mv;
     }
 
@@ -34,7 +34,7 @@ public class UsersController {
         UserRepository repository = new UserRepository();
         User user = repository.getUser(email.trim(), password);
         if (user == null) {
-            ModelView mv = new ModelView("/login.jsp");
+            ModelView mv = new ModelView("/auth/login.jsp");
             mv.addObject("errors", "Email ou mot de passe incorrect");
             return mv;
         }
