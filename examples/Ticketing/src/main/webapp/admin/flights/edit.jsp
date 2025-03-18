@@ -42,7 +42,7 @@
                     <select class="form-select" id="departureCityId" name="departureCityId" required>
                         <option value="">Sélectionnez une ville</option>
                         <c:forEach items="${cities}" var="city">
-                            <option value="${city.id}" ${flight.departureCityId eq city.id ? 'selected' : ''}>${city.name} (${city.countryId})</option>
+                            <option value="${city.id}" ${flight.departureCityId eq city.id ? 'selected' : ''}>${city.name} (${city.countryName})</option>
                         </c:forEach>
                     </select>
                     <div class="invalid-feedback">Veuillez sélectionner une ville de départ.</div>
@@ -55,7 +55,7 @@
                     <select class="form-select" id="arrivalCityId" name="arrivalCityId" required>
                         <option value="">Sélectionnez une ville</option>
                         <c:forEach items="${cities}" var="city">
-                            <option value="${city.id}" ${flight.arrivalCityId eq city.id ? 'selected' : ''}>${city.name} (${city.countryId})</option>
+                            <option value="${city.id}" ${flight.arrivalCityId eq city.id ? 'selected' : ''}>${city.name} (${city.countryName})</option>
                         </c:forEach>
                     </select>
                     <div class="invalid-feedback">Veuillez sélectionner une ville d'arrivée.</div>

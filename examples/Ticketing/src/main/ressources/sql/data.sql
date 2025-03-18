@@ -65,3 +65,11 @@ INSERT INTO fares (flight_id, passenger_type_id, base_price) VALUES
 INSERT INTO config_fares (passenger_type_id, price) VALUES
     (1, 500.00), -- Default ADULT fare
     (2, 250.00); -- Default CHILD fare
+
+-- Insertion des données dans la table configurations
+INSERT INTO configurations (config_key, config_value, description) 
+VALUES
+('reservation_cutoff_hours', '24', 'Délai en heures avant lequel une réservation doit être effectuée'),
+('cancellation_cutoff_hours', '48', 'Délai en heures avant lequel une annulation peut être effectuée sans frais'),
+('promotion_limit', '10', 'Nombre maximum de promotions actives simultanément'),
+('promotion_discount', '15', 'Pourcentage de réduction standard pour les promotions');

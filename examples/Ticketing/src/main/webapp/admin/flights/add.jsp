@@ -15,7 +15,7 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="flightNumber" class="form-label">Numéro de vol</label>
-                    <input type="text" class="form-control" id="flightNumber" name="flightNumber" required>
+                    <input type="text" class="form-control" id="flightNumber" name="flightNumber" >
                     <div class="invalid-feedback">Veuillez saisir un numéro de vol.</div>
                 </div>
             </div>
@@ -23,7 +23,7 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="airplaneId" class="form-label">Avion</label>
-                    <select class="form-select" id="airplaneId" name="airplaneId" required>
+                    <select class="form-select" id="airplaneId" name="airplaneId" >
                         <option value="">Sélectionnez un avion</option>
                         <c:forEach items="${airplanes}" var="airplane">
                             <option value="${airplane.id}">${airplane.model} (${airplane.totalSeats} sièges)</option>
@@ -36,10 +36,10 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="departureCityId" class="form-label">Ville de départ</label>
-                    <select class="form-select" id="departureCityId" name="departureCityId" required>
+                    <select class="form-select" id="departureCityId" name="departureCityId" >
                         <option value="">Sélectionnez une ville</option>
                         <c:forEach items="${cities}" var="city">
-                            <option value="${city.id}">${city.name} (${city.countryId})</option>
+                            <option value="${city.id}">${city.name} (${city.countryName})</option>
                         </c:forEach>
                     </select>
                     <div class="invalid-feedback">Veuillez sélectionner une ville de départ.</div>
@@ -49,10 +49,10 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="arrivalCityId" class="form-label">Ville d'arrivée</label>
-                    <select class="form-select" id="arrivalCityId" name="arrivalCityId" required>
+                    <select class="form-select" id="arrivalCityId" name="arrivalCityId" >
                         <option value="">Sélectionnez une ville</option>
                         <c:forEach items="${cities}" var="city">
-                            <option value="${city.id}">${city.name} (${city.countryId})</option>
+                            <option value="${city.id}">${city.name} (${city.countryName})</option>
                         </c:forEach>
                     </select>
                     <div class="invalid-feedback">Veuillez sélectionner une ville d'arrivée.</div>
@@ -62,7 +62,7 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="departureTime" class="form-label">Date et heure de départ</label>
-                    <input type="datetime-local" class="form-control" id="departureTime" name="departureTime" required>
+                    <input type="datetime-local" class="form-control" id="departureTime" name="departureTime" >
                     <div class="invalid-feedback">Veuillez saisir une date et heure de départ.</div>
                 </div>
             </div>
@@ -70,7 +70,7 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <label for="arrivalTime" class="form-label">Date et heure d'arrivée</label>
-                    <input type="datetime-local" class="form-control" id="arrivalTime" name="arrivalTime" required>
+                    <input type="datetime-local" class="form-control" id="arrivalTime" name="arrivalTime" >
                     <div class="invalid-feedback">Veuillez saisir une date et heure d'arrivée.</div>
                 </div>
             </div>
@@ -78,13 +78,13 @@
             <div class="row mb-3">
                 <div class="col-md-3">
                     <label for="reservationCutoffHours" class="form-label">Délai de réservation (heures)</label>
-                    <input type="number" class="form-control" id="reservationCutoffHours" name="reservationCutoffHours" min="0" required>
+                    <input type="number" class="form-control" id="reservationCutoffHours" name="reservationCutoffHours" min="0" value="${reservation_cutoff_hours}">
                     <div class="invalid-feedback">Veuillez saisir un délai valide.</div>
                 </div>
                 
                 <div class="col-md-3">
                     <label for="cancellationCutoffHours" class="form-label">Délai d'annulation (heures)</label>
-                    <input type="number" class="form-control" id="cancellationCutoffHours" name="cancellationCutoffHours" min="0" required>
+                    <input type="number" class="form-control" id="cancellationCutoffHours" name="cancellationCutoffHours" min="0" value="${cancellation_cutoff_hours}">
                     <div class="invalid-feedback">Veuillez saisir un délai valide.</div>
                 </div>
             </div>

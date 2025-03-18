@@ -4,6 +4,9 @@ import java.util.List;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
+import mg.itu.avion.airplane.AirplaneRepository;
+import mg.itu.avion.city.CityRepository;
+
 public class FlightRepository {
     private SqlSessionFactory sqlSessionFactory;
     
@@ -14,7 +17,13 @@ public class FlightRepository {
     public List<Flight> getAllFlights() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             FlightMapper mapper = session.getMapper(FlightMapper.class);
-            return mapper.getAllFlights();
+            List<Flight> flights = mapper.getAllFlights();
+            for (Flight flight : flights) {
+                flight.setDepartureCity(new CityRepository(sqlSessionFactory).getCityById(flight.getDepartureCityId()));
+                flight.setArrivalCity(new CityRepository(sqlSessionFactory).getCityById(flight.getArrivalCityId()));
+                flight.setAirplane(new AirplaneRepository(sqlSessionFactory).getAirplaneById(flight.getAirplaneId()));
+            }
+            return flights;
         }
     }
     

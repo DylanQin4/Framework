@@ -14,7 +14,11 @@ public class CityRepository {
     public List<City> getAllCities() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             CityMapper mapper = session.getMapper(CityMapper.class);
-            return mapper.getAllCities();
+            List<City> cities = mapper.getAllCities();
+            for (City city : cities) {
+                city.setCountryName(new CountryRepository(sqlSessionFactory).getCountryNameById(city.getCountryId()));
+            }
+            return cities;
         }
     }
     
