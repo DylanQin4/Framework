@@ -88,6 +88,20 @@
                     <div class="invalid-feedback">Veuillez saisir un délai valide.</div>
                 </div>
             </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label for="promotionLimit" class="form-label">Promotion limit</label>
+                    <input type="number" class="form-control" id="promotionLimit" name="promotionLimit" min="0" value="0">
+                    <div class="invalid-feedback">Veuillez saisir un délai valide.</div>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="promotionDiscount" class="form-label">Promotion discount</label>
+                    <input type="number" class="form-control" id="cancellationCutoffHours" name="promotionDiscount" min="0" value="0">
+                    <div class="invalid-feedback">Veuillez saisir un délai valide.</div>
+                </div>
+            </div>
             
             <div class="row mb-3">
                 <div class="col-12">

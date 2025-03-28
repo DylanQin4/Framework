@@ -6,9 +6,11 @@ import com.ETU1792.annotation.FormView;
 import com.ETU1792.annotation.GET;
 import com.ETU1792.annotation.POST;
 import com.ETU1792.annotation.Param;
+import com.ETU1792.annotation.ParamObject;
 import com.ETU1792.annotation.Role;
 import com.ETU1792.utils.ModelView;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import mg.itu.avion.airplane.AirplaneRepository;
@@ -58,24 +60,10 @@ public class FlightController {
     
     @POST("flights/add")
     @FormView("flights/add")
-    public ModelView addFlight(
-            @Param(name = "flightNumber") String flightNumber,
-            @Param(name = "departureTime") String departureTime,
-            @Param(name = "arrivalTime") String arrivalTime,
-            @Param(name = "reservationCutoffHours") String reservationCutoffHours,
-            @Param(name = "cancellationCutoffHours") String cancellationCutoffHours,
-            @Param(name = "airplaneId") Integer airplaneId,
-            @Param(name = "departureCityId") Integer departureCityId,
-            @Param(name = "arrivalCityId") Integer arrivalCityId) {
+    public ModelView addFlight(@ParamObject Flight newFlight) {
         
-        flightService.createFlight(
-            flightNumber, departureTime, arrivalTime, 
-            Integer.parseInt(reservationCutoffHours), 
-            Integer.parseInt(cancellationCutoffHours),
-            airplaneId, 
-            departureCityId, 
-            arrivalCityId
-        );
+        newFlight.setCreatedAt(LocalDateTime.now());
+        flightService.createFlight(newFlight);
         
         ModelView mv = new ModelView("flights");
         mv.setIsRedirect(true);
@@ -94,25 +82,9 @@ public class FlightController {
     }
     
     @POST("flights/edit")
-    public ModelView editFlight(
-            @Param(name = "id") String id,
-            @Param(name = "flightNumber") String flightNumber,
-            @Param(name = "departureTime") String departureTime,
-            @Param(name = "arrivalTime") String arrivalTime,
-            @Param(name = "reservationCutoffHours") String reservationCutoffHours,
-            @Param(name = "cancellationCutoffHours") String cancellationCutoffHours,
-            @Param(name = "airplaneId") Integer airplaneId,
-            @Param(name = "departureCityId") Integer departureCityId,
-            @Param(name = "arrivalCityId") Integer arrivalCityId) {
+    public ModelView editFlight(@ParamObject Flight flight) {
             
-        flightService.updateFlight(
-            id, flightNumber, departureTime, arrivalTime, 
-            Integer.parseInt(reservationCutoffHours), 
-            Integer.parseInt(cancellationCutoffHours),
-            airplaneId, 
-            departureCityId, 
-            arrivalCityId
-        );
+        flightService.updateFlight(flight);
         
         ModelView mv = new ModelView("flights");
         mv.setIsRedirect(true);

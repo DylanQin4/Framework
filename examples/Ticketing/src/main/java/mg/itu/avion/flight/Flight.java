@@ -8,6 +8,7 @@ import mg.itu.avion.city.City;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import com.ETU1792.annotation.validation.Required;
@@ -38,6 +39,22 @@ public class Flight {
     private City departureCity;
     private City arrivalCity;
     private Airplane airplane;
+
+    public void setDepartureTime(String departureTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        this.departureTime = LocalDateTime.parse(departureTime, formatter);
+    }
+    public void setArrivalTime(String arrivalTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        this.arrivalTime = LocalDateTime.parse(arrivalTime, formatter);
+    }
+
+    public void setDepartureTime(LocalDateTime departureTime) {
+        this.departureTime = departureTime;
+    }
+    public void setArrivalTime(LocalDateTime arrivalTime) {
+        this.arrivalTime = arrivalTime;
+    }
 
     public Date getDepartureTimeAsDate() {
         return Date.from(departureTime.atZone(ZoneId.systemDefault()).toInstant());
