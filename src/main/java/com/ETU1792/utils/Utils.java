@@ -13,6 +13,12 @@ import com.thoughtworks.paranamer.Paranamer;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
+import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class Utils {
@@ -155,24 +161,54 @@ public class Utils {
         if (value == null || value.isEmpty()) {
             return null;
         }
-        if (type == int.class || type == Integer.class) {
-            try {
-                return Integer.parseInt(value);
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid integer value: " + value);
+
+        try {
+            switch (type.getName()) {
+                case "int":
+                case "java.lang.Integer":
+                    return Integer.parseInt(value);
+
+                case "double":
+                case "java.lang.Double":
+                    return Double.parseDouble(value);
+
+                case "float":
+                case "java.lang.Float":
+                    return Float.parseFloat(value);
+
+                case "long":
+                case "java.lang.Long":
+                    return Long.parseLong(value);
+
+                case "short":
+                case "java.lang.Short":
+                    return Short.parseShort(value);
+
+                case "boolean":
+                case "java.lang.Boolean":
+                    return Boolean.parseBoolean(value);
+
+                case "java.math.BigDecimal":
+                    return new BigDecimal(value);
+
+                case "java.time.LocalDateTime":
+                    return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+                case "java.time.LocalDate":
+                    return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
+
+                case "java.time.LocalTime":
+                    return LocalTime.parse(value, DateTimeFormatter.ISO_LOCAL_TIME);
+
+                case "java.lang.String":
+                    return value;
+
+                default:
+                    throw new IllegalArgumentException("Unsupported type: " + type.getName());
             }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid value for type " + type.getName() + ": " + value, e);
         }
-        if (type == double.class || type == Double.class) {
-            try {
-                return Double.parseDouble(value);
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid double value: " + value);
-            }
-        }
-        if (type == boolean.class || type == Boolean.class) {
-            return Boolean.parseBoolean(value);
-        }
-        return value;
     }
 
     // Processes an object annotated with ParamObject
