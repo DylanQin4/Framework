@@ -104,17 +104,6 @@ CREATE TABLE flights (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Table flight_class
-DROP TABLE IF EXISTS flight_class CASCADE;
-CREATE TABLE flight_class (
-    id SERIAL PRIMARY KEY,
-    flight_id INTEGER NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
-    class_id INTEGER NOT NULL REFERENCES class(id) ON DELETE CASCADE,
-    promotion_limit INTEGER NOT NULL,          -- number of reservations eligible for the promotion for this flight/class
-    promotion_discount NUMERIC(5,2) NOT NULL DEFAULT 0.00, -- pourcentage of discount
-    UNIQUE(flight_id, class_id)
-);
-
 -- Table passenger_type 
 DROP TABLE IF EXISTS passenger_type CASCADE;
 CREATE TABLE passenger_type (
@@ -122,14 +111,17 @@ CREATE TABLE passenger_type (
     type_name VARCHAR(10) NOT NULL
 );
 
--- Table tariffs
-DROP TABLE IF EXISTS fares CASCADE;
-CREATE TABLE fares (
+-- Table flight_class_passenger
+DROP TABLE IF EXISTS flight_class_passenger CASCADE;
+CREATE TABLE flight_class_passenger (
     id SERIAL PRIMARY KEY,
     flight_id INTEGER NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
+    class_id INTEGER NOT NULL REFERENCES class(id) ON DELETE CASCADE,
     passenger_type_id INTEGER NOT NULL REFERENCES passenger_type(id) ON DELETE CASCADE,
-    base_price NUMERIC(10,2) NOT NULL,
-    UNIQUE(flight_id, passenger_type_id)
+    promotion_limit INTEGER NOT NULL,          -- number of reservations eligible for the promotion for this flight/class
+    promotion_discount NUMERIC(5,2) NOT NULL DEFAULT 0.00, -- pourcentage of discount
+    base_price NUMERIC(10, 2) NOT NULL, 
+    UNIQUE(flight_id, class_id, passenger_type_id)
 );
 
 -- Table config_fares
@@ -140,6 +132,8 @@ CREATE TABLE config_fares (
     price NUMERIC(10,2) NOT NULL,
     UNIQUE(passenger_type_id)
 );
+ALTER TABLE config_fares
+ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
 
 -- Table reservations
 DROP TABLE IF EXISTS reservations CASCADE;
@@ -160,14 +154,14 @@ DROP TABLE IF EXISTS reservation_details CASCADE;
 CREATE TABLE reservation_details (
     id SERIAL PRIMARY KEY,
     reservation_id INTEGER NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
-    passenger_type_id INTEGER NOT NULL REFERENCES passenger_type(id) ON DELETE CASCADE,
     passenger_name VARCHAR(100) NOT NULL,
+    passenger_birthdate DATE NOT NULL,
     file_path_passport VARCHAR(255),
+    class_id INTEGER NOT NULL REFERENCES class(id) ON DELETE CASCADE,
     price NUMERIC(10,2) NOT NULL,
     discount NUMERIC(5,2) DEFAULT 0.00,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
 
 ---------------------------------------------------------------------
 -- Table configurations  

@@ -30,6 +30,11 @@ public class MyBatisUtil {
         configuration.addMapper(mg.itu.avion.city.CityMapper.class);
         configuration.addMapper(mg.itu.avion.city.CountryMapper.class);
         configuration.addMapper(mg.itu.avion.config.ConfigurationMapper.class);
+        configuration.addMapper(mg.itu.avion.airplane.ClassMapper.class);
+        configuration.addMapper(mg.itu.avion.passenger.PassengerTypeMapper.class);
+        configuration.addMapper(mg.itu.avion.reservation.ReservationMapper.class);
+        configuration.addMapper(mg.itu.avion.flight.FlightClassPassengerMapper.class);
+        configuration.addMapper(mg.itu.avion.passenger.ConfigFaresMapper.class);
 
         sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
     }
