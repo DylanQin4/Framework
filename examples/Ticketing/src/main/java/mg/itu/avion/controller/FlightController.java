@@ -139,20 +139,61 @@ public class FlightController {
     
     @GET("flights/edit")
     public ModelView getEditFlight(@Param(name = "id") String id) {
+        // Récupérer le vol à éditer
         Flight flight = flightService.getFlightById(id);
         
+        // Récupérer les tarifs et promotions pour ce vol
+        List<FlightClassPassenger> flightClassPassengers = flightClassPassengerService.getFlightClassPassengersByFlightId(flight.getId());
+    
+        // Préparer le modèle pour la vue
         ModelView mv = new ModelView("/admin/flights/edit.jsp");
         mv.addObject("flight", flight);
         mv.addObject("airplanes", airplaneService.getAllAirplanes());
         mv.addObject("cities", cityService.getAllCities());
+        mv.addObject("classes", classService.getAllClasses());
+        mv.addObject("passengerTypes", passengerTypeService.getAllPassengerTypes());
+        mv.addObject("flightClassPassengers", flightClassPassengers);
+
+        System.out.println("flightClassPassengers : " + flightClassPassengers);
+    
         return mv;
     }
     
     @POST("flights/edit")
-    public ModelView editFlight(@ParamObject Flight flight) {
-            
+    public ModelView editFlight(@ParamObject Flight flight, @Param(name = "flightClassPassengerData") String flightClassPassengerData) {
+        // Mettre à jour les informations du vol
         flightService.updateFlight(flight);
-        
+    
+        // Supprimer les anciens tarifs et promotions pour ce vol
+        flightClassPassengerService.deleteFlightClassPassengersByFlightId(flight.getId());
+    
+        // Insérer les nouveaux tarifs et promotions
+        if (flightClassPassengerData != null && !flightClassPassengerData.isEmpty()) {
+            String[] entries = flightClassPassengerData.split("\\|");
+    
+            for (String entry : entries) {
+                String[] fields = entry.split(",");
+                if (fields.length == 5) {
+                    Integer classId = Integer.parseInt(fields[0]);
+                    Integer passengerTypeId = Integer.parseInt(fields[1]);
+                    Double basePrice = Double.parseDouble(fields[2]);
+                    Integer promotionLimit = Integer.parseInt(fields[3]);
+                    Double promotionDiscount = Double.parseDouble(fields[4]);
+    
+                    FlightClassPassenger fcp = new FlightClassPassenger();
+                    fcp.setFlightId(flight.getId());
+                    fcp.setClassId(classId);
+                    fcp.setPassengerTypeId(passengerTypeId);
+                    fcp.setBasePrice(basePrice);
+                    fcp.setPromotionLimit(promotionLimit);
+                    fcp.setPromotionDiscount(promotionDiscount);
+    
+                    flightClassPassengerService.addFlightClassPassenger(fcp);
+                }
+            }
+        }
+    
+        // Redirection vers la liste des vols
         ModelView mv = new ModelView("flights");
         mv.setIsRedirect(true);
         return mv;

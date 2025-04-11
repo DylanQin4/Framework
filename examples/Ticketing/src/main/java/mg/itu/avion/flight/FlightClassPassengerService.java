@@ -16,4 +16,8 @@ public class FlightClassPassengerService {
     public List<FlightClassPassenger> getFlightClassPassengersByFlightId(Integer flightId) {
         return repository.getFlightClassPassengersByFlightId(flightId);
     }
+
+    public void deleteFlightClassPassengersByFlightId(Integer id) {
+        repository.deleteFlightClassPassengersByFlightId(id);
+    }
 }

@@ -25,4 +25,12 @@ public class FlightClassPassengerRepository {
             return mapper.getFlightClassPassengersByFlightId(flightId);
         }
     }
+
+    public void deleteFlightClassPassengersByFlightId(Integer id) {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            FlightClassPassengerMapper mapper = session.getMapper(FlightClassPassengerMapper.class);
+            mapper.deleteFlightClassPassengersByFlightId(id);
+            session.commit();
+        }
+    }
 }
