@@ -13,6 +13,10 @@ public class FlightClassPassengerService {
         repository.saveFlightClassPassenger(flightClassPassenger);
     }
 
+    public FlightClassPassenger getFlightClassPassengerById(Integer flightId, Integer classId, Integer passengerTypeId) {
+        return repository.getFlightClassPassengerById(flightId, classId, passengerTypeId);
+    }
+
     public List<FlightClassPassenger> getFlightClassPassengersByFlightId(Integer flightId) {
         return repository.getFlightClassPassengersByFlightId(flightId);
     }

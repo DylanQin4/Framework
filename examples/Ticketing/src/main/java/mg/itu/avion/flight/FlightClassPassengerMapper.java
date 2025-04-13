@@ -12,17 +12,33 @@ public interface FlightClassPassengerMapper {
 
     @Select("SELECT * FROM flight_class_passenger WHERE flight_id = #{flightId}")
     @Results({
-            @Result(property = "id", column = "id"),
-            @Result(property = "flightId", column = "flight_id"),
-            @Result(property = "classId", column = "class_id"),
-            @Result(property = "passengerTypeId", column = "passenger_type_id"),
-            @Result(property = "promotionLimit", column = "promotion_limit"),
-            @Result(property = "promotionDiscount", column = "promotion_discount"),
-            @Result(property = "basePrice", column = "base_price")
+        @Result(property = "id", column = "id"),
+        @Result(property = "flightId", column = "flight_id"),
+        @Result(property = "classId", column = "class_id"),
+        @Result(property = "passengerTypeId", column = "passenger_type_id"),
+        @Result(property = "promotionLimit", column = "promotion_limit"),
+        @Result(property = "promotionDiscount", column = "promotion_discount"),
+        @Result(property = "basePrice", column = "base_price")
     })
     List<FlightClassPassenger> getFlightClassPassengersByFlightId(Integer flightId);
 
     @Delete("DELETE FROM flight_class_passenger WHERE flight_id = #{id}")
     @Options(flushCache = Options.FlushCachePolicy.TRUE)
     void deleteFlightClassPassengersByFlightId(Integer id);
+
+    @Select("SELECT * FROM flight_class_passenger WHERE flight_id = #{flightId} AND class_id = #{classId} AND passenger_type_id = #{passengerTypeId}")
+    @Results({
+        @Result(property = "id", column = "id"),
+        @Result(property = "flightId", column = "flight_id"),
+        @Result(property = "classId", column = "class_id"),
+        @Result(property = "passengerTypeId", column = "passenger_type_id"),
+        @Result(property = "promotionLimit", column = "promotion_limit"),
+        @Result(property = "promotionDiscount", column = "promotion_discount"),
+        @Result(property = "basePrice", column = "base_price")
+    })
+    FlightClassPassenger getFlightClassPassengerById(
+        @Param("flightId") Integer flightId,
+        @Param("classId") Integer classId,
+        @Param("passengerTypeId") Integer passengerTypeId
+    );
 }

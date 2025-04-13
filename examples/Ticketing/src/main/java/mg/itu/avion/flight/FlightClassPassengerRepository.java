@@ -33,4 +33,11 @@ public class FlightClassPassengerRepository {
             session.commit();
         }
     }
+
+    public FlightClassPassenger getFlightClassPassengerById(Integer flightId, Integer classId, Integer passengerTypeId) {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            FlightClassPassengerMapper mapper = session.getMapper(FlightClassPassengerMapper.class);
+            return mapper.getFlightClassPassengerById(flightId, classId, passengerTypeId);
+        }
+    }
 }
