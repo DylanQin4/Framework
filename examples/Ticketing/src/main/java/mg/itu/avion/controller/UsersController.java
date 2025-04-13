@@ -13,7 +13,7 @@ public class UsersController {
     @GET("")
     public ModelView getViewLogin(MySession mySession){
         if (mySession.get("auth") != null) {
-            ModelView mv = new ModelView("flights");
+            ModelView mv = new ModelView("reservations/add");
             mv.setIsRedirect(true);
             return mv;
         }
@@ -42,6 +42,7 @@ public class UsersController {
         System.out.println("User: " + user);
         
         session.add("auth", true);
+        session.add("userId", user.getId());
         session.add("role", user.getRolesLabel());
         session.add("username", user.getUsername());
         session.add("email", user.getEmail());
@@ -91,6 +92,7 @@ public class UsersController {
     @GET(value = "logout")
     public ModelView logout(MySession session) {
         session.delete("auth");
+        session.delete("userId");
         session.delete("role");
         session.delete("username");
         session.delete("email");
