@@ -104,32 +104,26 @@ CREATE TABLE flights (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Table flight_class
-DROP TABLE IF EXISTS flight_class CASCADE;
-CREATE TABLE flight_class (
-    id SERIAL PRIMARY KEY,
-    flight_id INTEGER NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
-    class_id INTEGER NOT NULL REFERENCES class(id) ON DELETE CASCADE,
-    promotion_limit INTEGER NOT NULL,          -- number of reservations eligible for the promotion for this flight/class
-    promotion_discount NUMERIC(5,2) NOT NULL DEFAULT 0.00, -- pourcentage of discount
-    UNIQUE(flight_id, class_id)
-);
-
 -- Table passenger_type 
 DROP TABLE IF EXISTS passenger_type CASCADE;
 CREATE TABLE passenger_type (
     id SERIAL PRIMARY KEY,
-    type_name VARCHAR(10) NOT NULL
+    type_name VARCHAR(10) NOT NULL,
+    start_age SMALLINT,
+    end_age SMALLINT
 );
 
--- Table tariffs
-DROP TABLE IF EXISTS fares CASCADE;
-CREATE TABLE fares (
+-- Table flight_class_passenger
+DROP TABLE IF EXISTS flight_class_passenger CASCADE;
+CREATE TABLE flight_class_passenger (
     id SERIAL PRIMARY KEY,
     flight_id INTEGER NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
+    class_id INTEGER NOT NULL REFERENCES class(id) ON DELETE CASCADE,
     passenger_type_id INTEGER NOT NULL REFERENCES passenger_type(id) ON DELETE CASCADE,
-    base_price NUMERIC(10,2) NOT NULL,
-    UNIQUE(flight_id, passenger_type_id)
+    promotion_limit INTEGER NOT NULL,          -- number of reservations eligible for the promotion for this flight/class
+    promotion_discount NUMERIC(5,2) NOT NULL DEFAULT 0.00, -- pourcentage of discount
+    base_price NUMERIC(10, 2) NOT NULL, 
+    UNIQUE(flight_id, class_id, passenger_type_id)
 );
 
 -- Table config_fares
@@ -140,6 +134,8 @@ CREATE TABLE config_fares (
     price NUMERIC(10,2) NOT NULL,
     UNIQUE(passenger_type_id)
 );
+ALTER TABLE config_fares
+ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
 
 -- Table reservations
 DROP TABLE IF EXISTS reservations CASCADE;
@@ -147,27 +143,17 @@ CREATE TABLE reservations (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     flight_id INTEGER NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
-    reservation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(20) NOT NULL DEFAULT 'RESERVED' CHECK (status IN ('RESERVED', 'CANCELLED', 'PAID', 'PENDING')),
-    total_amount NUMERIC(10,2),
+    amount NUMERIC(10,2),
+    discount NUMERIC(5,2) DEFAULT 0.00,
+    passenger_name VARCHAR(100) NOT NULL,
+    passenger_birthdate DATE NOT NULL,
+    file_path_passport VARCHAR(255) NOT NULL,
+    class_id INTEGER NOT NULL REFERENCES class(id) ON DELETE CASCADE,
     cancellation_date TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
--- Table reservation_details
-DROP TABLE IF EXISTS reservation_details CASCADE;
-CREATE TABLE reservation_details (
-    id SERIAL PRIMARY KEY,
-    reservation_id INTEGER NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
-    passenger_type_id INTEGER NOT NULL REFERENCES passenger_type(id) ON DELETE CASCADE,
-    passenger_name VARCHAR(100) NOT NULL,
-    file_path_passport VARCHAR(255),
-    price NUMERIC(10,2) NOT NULL,
-    discount NUMERIC(5,2) DEFAULT 0.00,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 
 ---------------------------------------------------------------------
 -- Table configurations  
@@ -193,65 +179,3 @@ CREATE TABLE configurations (
 -- 3. When cancelling (updating status to 'cancelled'), verify that the cancellation occurs before departure_time minus cancellation_cutoff_hours.
 -- 4. Verify that the selected flight class corresponds to the flight.
 ---------------------------------------------------------------------
-
--- Function to enforce business rules
-CREATE OR REPLACE FUNCTION enforce_reservation_rules()
-RETURNS TRIGGER AS $$
-DECLARE
-    flight_record RECORD;
-    cutoff_time TIMESTAMP;
-    promotion_available BOOLEAN;
-    promotion_count INTEGER;
-BEGIN
-    -- Retrieve flight details
-    SELECT * INTO flight_record
-    FROM flights
-    WHERE id = NEW.flight_id;
-
-    -- Rule 1: Verify reservation is made before the cutoff time
-    cutoff_time := flight_record.departure_time - (flight_record.reservation_cutoff_hours * INTERVAL '1 hour');
-    IF NEW.reservation_date > cutoff_time THEN
-        RAISE EXCEPTION 'Reservation cannot be made after the cutoff time: %', cutoff_time;
-    END IF;
-
-    -- Rule 2: Assign promotion to the first eligible reservations
-    IF NEW.status = 'RESERVED' THEN
-        -- Check if promotion is available for the flight class
-        SELECT COUNT(*) INTO promotion_count
-        FROM reservation_details rd
-        JOIN flight_class fc ON rd.reservation_id = NEW.id AND fc.flight_id = NEW.flight_id
-        WHERE fc.promotion_limit > 0;
-
-        IF promotion_count < (SELECT promotion_limit FROM flight_class WHERE flight_id = NEW.flight_id AND class_id = NEW.class_id) THEN
-            -- Apply promotion discount
-            NEW.discount := (SELECT promotion_discount FROM flight_class WHERE flight_id = NEW.flight_id AND class_id = NEW.class_id);
-        END IF;
-    END IF;
-
-    -- Rule 3: Verify cancellation is before the cutoff time
-    IF NEW.status = 'CANCELLED' THEN
-        cutoff_time := flight_record.departure_time - (flight_record.cancellation_cutoff_hours * INTERVAL '1 hour');
-        IF NEW.cancellation_date > cutoff_time THEN
-            RAISE EXCEPTION 'Cancellation cannot be made after the cutoff time: %', cutoff_time;
-        END IF;
-    END IF;
-
-    -- Rule 4: Verify the selected flight class corresponds to the flight
-    IF NOT EXISTS (
-        SELECT 1
-        FROM flight_class fc
-        WHERE fc.flight_id = NEW.flight_id AND fc.class_id = NEW.class_id
-    ) THEN
-        RAISE EXCEPTION 'Invalid flight class for the selected flight';
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create the trigger that fires before insert or update on reservations
-DROP TRIGGER IF EXISTS trigger_enforce_reservation_rules ON reservations;
-CREATE TRIGGER trigger_enforce_reservation_rules
-BEFORE INSERT OR UPDATE ON reservations
-FOR EACH ROW
-EXECUTE FUNCTION enforce_reservation_rules();

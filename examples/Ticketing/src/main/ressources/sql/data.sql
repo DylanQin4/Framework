@@ -48,9 +48,9 @@ INSERT INTO flight_class (flight_id, class_id, promotion_limit, promotion_discou
     (3, 2, 10, 10.00); -- BUSINESS class for flight 3 with a promotion limit of 10 and 10% discount
 
 -- Insertion des types de passagers
-INSERT INTO passenger_type (type_name) VALUES
-    ('ADULT'),
-    ('CHILD');
+INSERT INTO passenger_type (type_name, start_age, end_age) VALUES
+    ('ADULT', 18, 150),
+    ('CHILD', 0, 17);
 
 -- Insertion des tarifs
 INSERT INTO fares (flight_id, passenger_type_id, base_price) VALUES

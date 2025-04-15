@@ -1,6 +1,12 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ page import="com.google.gson.Gson" %>
+<%
+    Gson gson = new Gson();
+    String classesJson = gson.toJson(request.getAttribute("classes"));
+    String passengerTypesJson = gson.toJson(request.getAttribute("passengerTypes"));
+%>
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,7 +18,7 @@
     <div class="container mt-4">
         <h1>Modifier un Vol</h1>
         
-        <form action="${pageContext.request.contextPath}/flights/edit" method="post" class="needs-validation" novalidate>
+        <form action="${pageContext.request.contextPath}/flights/edit" method="post" id="flightForm" class="needs-validation" novalidate>
             <input type="hidden" name="id" value="${flight.id}">
             
             <div class="row mb-3">
@@ -95,6 +101,55 @@
                     <div class="invalid-feedback">Veuillez saisir un délai valide.</div>
                 </div>
             </div>
+
+            <!-- Prix, promotions et limites par classe et type de passager -->
+            <h4 class="mt-4">Tarifs et Promotions par Classe et Type de Passager</h4>
+            <c:forEach items="${classes}" var="clazz">
+                <div class="card mb-3">
+                    <div class="card-header">Classe : ${clazz.label}</div>
+                    <div class="card-body">
+                        <c:forEach items="${passengerTypes}" var="passengerType">
+                            <div class="row mb-3">
+                                <div class="col-md-12"><strong>Type de passager : ${passengerType.typeName}</strong></div>
+                                
+                                <!-- Récupérer les valeurs existantes pour cette classe et ce type de passager -->
+                                <c:set var="existingFcp" value="" />
+                                <c:forEach items="${flightClassPassengers}" var="fcp">
+                                    <c:if test="${fcp.classId eq clazz.id and fcp.passengerTypeId eq passengerType.id}">
+                                        <c:set var="existingFcp" value="${fcp}" />
+                                    </c:if>
+                                </c:forEach>
+
+                                <!-- Champs cachés pour les identifiants -->
+                                <input type="hidden" name="classId_${clazz.id}_${passengerType.id}" value="${clazz.id}">
+                                <input type="hidden" name="passengerTypeId_${clazz.id}_${passengerType.id}" value="${passengerType.id}">
+
+                                <div class="col-md-4">
+                                    <label for="basePrice_${clazz.id}_${passengerType.id}" class="form-label">Prix de base</label>
+                                    <input type="number" step="0.01" class="form-control" id="basePrice_${clazz.id}_${passengerType.id}" 
+                                        name="basePrice_${clazz.id}_${passengerType.id}" 
+                                        value="${not empty existingFcp ? existingFcp.basePrice : 0.0}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="promotionLimit_${clazz.id}_${passengerType.id}" class="form-label">Limite de promotion</label>
+                                    <input type="number" class="form-control" id="promotionLimit_${clazz.id}_${passengerType.id}" 
+                                        name="promotionLimit_${clazz.id}_${passengerType.id}" 
+                                        value="${not empty existingFcp ? existingFcp.promotionLimit : 0}" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="promotionDiscount_${clazz.id}_${passengerType.id}" class="form-label">Réduction (%)</label>
+                                    <input type="number" step="0.01" class="form-control" id="promotionDiscount_${clazz.id}_${passengerType.id}" 
+                                        name="promotionDiscount_${clazz.id}_${passengerType.id}" 
+                                        value="${not empty existingFcp ? existingFcp.promotionDiscount : 0}" required>
+                                </div>
+                            </div>
+                        </c:forEach>
+                    </div>
+                </div>
+            </c:forEach>
+
+            <!-- Champ caché pour stocker les données formatées -->
+            <input type="hidden" id="flightClassPassengerData" name="flightClassPassengerData">
             
             <div class="row mb-3">
                 <div class="col-12">
@@ -106,6 +161,71 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            try {
+                const classes = <%= classesJson %>;
+                const passengerTypes = <%= passengerTypesJson %>;
+                console.log("Classes data:", classes);
+                console.log("Passenger Types data:", passengerTypes);
+
+                document.getElementById("flightForm").addEventListener("submit", function (event) {
+                    let flightClassPassengerData = "";
+
+                    if (!classes || !passengerTypes) {
+                        console.error("Classes or PassengerTypes data is missing!");
+                        return;
+                    }
+
+                    classes.forEach(clazz => {
+                        passengerTypes.forEach(passengerType => {
+                            const classId = clazz.id;
+                            const passengerTypeId = passengerType.id;
+
+                            if (classId === undefined || passengerTypeId === undefined) {
+                                console.error("Could not find ID properties for:", clazz, passengerType);
+                                return;
+                            }
+
+                            const basePriceInput = document.querySelector("input[name='basePrice_" + classId + "_" + passengerTypeId + "']");
+                            const promotionLimitInput = document.querySelector("input[name='promotionLimit_" + classId + "_" + passengerTypeId + "']");
+                            const promotionDiscountInput = document.querySelector("input[name='promotionDiscount_" + classId + "_" + passengerTypeId + "']");
+
+                            if (basePriceInput && promotionLimitInput && promotionDiscountInput) {
+                                const basePrice = parseFloat(basePriceInput.value);
+                                const promotionLimit = parseInt(promotionLimitInput.value);
+                                const promotionDiscount = parseFloat(promotionDiscountInput.value);
+
+                                
+                                if (isNaN(basePrice) || isNaN(promotionLimit) || isNaN(promotionDiscount)) {
+                                    console.warn(`Invalid input values for class ${classId}, type ${passengerTypeId}. Skipping.`);
+                                    return;
+                                }
+
+                                flightClassPassengerData += classId + "," + passengerTypeId + "," + basePrice + "," + promotionLimit + "," + promotionDiscount + "|";
+                            } else {
+                                console.error(`Input element missing for class ${classId}, type ${passengerTypeId}. \n` +
+                                              `Base Price Input: ${basePriceInput}\n` +
+                                              `Promotion Limit Input: ${promotionLimitInput}\n` +
+                                              `Promotion Discount Input: ${promotionDiscountInput}`);
+                            }
+                        });
+                    });
+
+                    // Supprimer le dernier délimiteur "|"
+                    if (flightClassPassengerData.endsWith("|")) {
+                        flightClassPassengerData = flightClassPassengerData.slice(0, -1);
+                    }
+
+                    // Assigner la chaîne générée au champ caché
+                    document.getElementById("flightClassPassengerData").value = flightClassPassengerData;
+                    console.log("Generated flightClassPassengerData:", flightClassPassengerData);
+                });
+            } catch (e) {
+                console.error("Error initializing form script:", e);
+            }
+        });
+    </script>
     <script>
         // Script pour la validation du formulaire
         (function() {
