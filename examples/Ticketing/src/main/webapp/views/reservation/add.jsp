@@ -10,6 +10,7 @@
 <body class="bg-gray-100">
     <div class="container mx-auto p-4">
         <h1 class="text-2xl font-bold mb-4">Ajouter une Réservation</h1>
+
         <form action="${pageContext.request.contextPath}/reservations/add" method="post" enctype="multipart/form-data" id="reservationForm" class="space-y-4 needs-validation" novalidate>
             <!-- Vol -->
             <div class="mb-4">
@@ -33,13 +34,18 @@
                     </c:forEach>
                 </select>
                 <p class="mt-2 text-sm text-red-600 hidden">Veuillez sélectionner un type de classe.</p>
+                <c:if test="${not empty errors.classId}">
+                    <p class="mt-2 text-sm text-red-600">${errors.classId}.</p>
+                </c:if>
             </div>
 
             <!-- Nom du Passager -->
             <div class="mb-4">
                 <label for="passengerName" class="block text-sm font-medium text-gray-700">Nom du passager</label>
-                <input type="text" id="passengerName" name="passengerName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" required>
-                <p class="mt-2 text-sm text-red-600 hidden">Veuillez saisir le nom du passager.</p>
+                <input type="text" id="passengerName" name="passengerName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                <c:if test="${not empty errors.passengerName}">
+                    <p class="mt-2 text-sm text-red-600">${errors.passengerName}.</p>
+                </c:if>
             </div>
 
             <!-- Date de Naissance du Passager -->
@@ -53,6 +59,9 @@
             <div class="mb-4">
                 <label for="filePathPassport" class="block text-sm font-medium text-gray-700">Fichier de passeport (optionnel)</label>
                 <input type="file" id="filePathPassport" name="filePathPassport" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                <c:if test="${not empty errors.filePathPassport}">
+                    <p class="mt-2 text-sm text-red-600">${errors.filePathPassport}.</p>
+                </c:if>
             </div>
 
             <!-- Boutons -->
