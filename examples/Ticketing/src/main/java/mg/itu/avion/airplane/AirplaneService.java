@@ -16,4 +16,8 @@ public class AirplaneService {
     public Airplane getAirplaneById(String id) {
         return airplaneRepository.getAirplaneById(Integer.parseInt(id));
     }
+
+    public Integer getSeatCountByAirplaneIdClassId(int airplaneId, int classId) {
+        return airplaneRepository.getSeatCountByAirplaneIdClassId(airplaneId, classId);
+    }
 }

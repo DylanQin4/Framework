@@ -29,7 +29,6 @@ public class Reservation {
     private String passengerName;
     @Required
     private LocalDate passengerBirthdate;
-    @Required
     private String filePathPassport; 
     @Required
     private Integer classId;

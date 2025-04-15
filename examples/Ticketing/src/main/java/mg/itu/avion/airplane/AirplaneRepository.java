@@ -24,4 +24,11 @@ public class AirplaneRepository {
             return mapper.getAirplaneById(id);
         }
     }
+
+    public Integer getSeatCountByAirplaneIdClassId(int airplaneId, int classId) {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            AirplaneClassMapper mapper = session.getMapper(AirplaneClassMapper.class);
+            return mapper.getSeatCountByAirplaneIdClassId(airplaneId, classId);
+        }
+    }
 }

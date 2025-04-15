@@ -20,6 +20,14 @@ INSERT INTO airplanes (model, total_seats) VALUES
     ('Airbus A320', 180),
     ('Boeing 787', 250);
 
+INSERT INTO airplane_class (airplane_id, class_id, seat_count) VALUES
+    (1, 1, 100), -- Boeing 737 has 100 ECONOMY seats
+    (1, 2, 50),  -- Boeing 737 has 50 BUSINESS seats
+    (2, 1, 120), -- Airbus A320 has 120 ECONOMY seats
+    (2, 2, 60),  -- Airbus A320 has 60 BUSINESS seats
+    (3, 1, 200), -- Boeing 787 has 200 ECONOMY seats
+    (3, 2, 50);  -- Boeing 787 has 50 BUSINESS seats
+
 -- Insertion des pays
 INSERT INTO country (name) VALUES
     ('France'),
