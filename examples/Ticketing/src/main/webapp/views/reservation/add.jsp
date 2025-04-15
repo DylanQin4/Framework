@@ -11,6 +11,14 @@
     <div class="container mx-auto p-4">
         <h1 class="text-2xl font-bold mb-4">Ajouter une Réservation</h1>
 
+        <!-- Affichage du message d'erreur -->
+        <c:if test="${not empty errorMessage}">
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">Erreur :</strong>
+                <span class="block sm:inline">${errorMessage}</span>
+            </div>
+        </c:if>
+
         <form action="${pageContext.request.contextPath}/reservations/add" method="post" enctype="multipart/form-data" id="reservationForm" class="space-y-4 needs-validation" novalidate>
             <!-- Vol -->
             <div class="mb-4">

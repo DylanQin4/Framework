@@ -35,6 +35,7 @@ public class MyBatisUtil {
         configuration.addMapper(mg.itu.avion.reservation.ReservationMapper.class);
         configuration.addMapper(mg.itu.avion.flight.FlightClassPassengerMapper.class);
         configuration.addMapper(mg.itu.avion.passenger.ConfigFaresMapper.class);
+        configuration.addMapper(mg.itu.avion.airplane.AirplaneClassMapper.class);
 
         sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
     }

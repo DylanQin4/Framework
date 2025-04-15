@@ -6,8 +6,10 @@ import java.time.Period;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
+import mg.itu.avion.airplane.AirplaneService;
 import mg.itu.avion.flight.FlightClassPassenger;
 import mg.itu.avion.flight.FlightClassPassengerService;
+import mg.itu.avion.flight.FlightService;
 import mg.itu.avion.passenger.PassengerType;
 import mg.itu.avion.passenger.PassengerTypeService;
 
@@ -16,6 +18,8 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final FlightClassPassengerService flightClassPassengerService;
     private final PassengerTypeService passengerTypeService;
+    private final AirplaneService airplaneService;
+    private final FlightService flightService;
 
     public List<Reservation> getAllReservations() {
         return reservationRepository.getAllReservations();
@@ -25,6 +29,16 @@ public class ReservationService {
         reservation.setCreatedAt(LocalDateTime.now());
         reservation.setUpdatedAt(LocalDateTime.now());
         reservation.setStatus(ReservationStatus.RESERVED); // Default status
+
+        // get seat disponibility by classId
+        int seatDispo = (int)airplaneService.getSeatCountByAirplaneIdClassId(flightService.getFlightById(reservation.getFlightId()).getAirplaneId(), reservation.getClassId());
+        int seatReserved = countReservationsByFlightIdClassId(reservation.getFlightId(), reservation.getClassId());
+        System.out.println("Seat available: " + seatDispo);
+        System.out.println("Seat reserved: " + seatReserved);
+        // check if there is available seat
+        if (seatDispo <= seatReserved) {
+            throw new IllegalArgumentException("No available seats in this class.");
+        }
 
         // get age of the passenger
         LocalDate birthDate = reservation.getPassengerBirthdate();
@@ -68,6 +82,13 @@ public class ReservationService {
         List<Reservation> reservations = reservationRepository.getAllReservations();
         return (int) reservations.stream()
                 .filter(reservation -> reservation.getFlightId().equals(flightId))
+                .count();
+    }
+
+    public int countReservationsByFlightIdClassId(Integer flightId, Integer classId) {
+        List<Reservation> reservations = reservationRepository.getAllReservations();
+        return (int) reservations.stream()
+                .filter(reservation -> reservation.getFlightId().equals(flightId) && reservation.getClassId().equals(classId))
                 .count();
     }
 

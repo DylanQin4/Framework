@@ -13,8 +13,8 @@ public class FlightService {
         return flightRepository.getAllFlights();
     }
     
-    public Flight getFlightById(String id) {
-        return flightRepository.getFlightById(Integer.parseInt(id));
+    public Flight getFlightById(Integer id) {
+        return flightRepository.getFlightById(id);
     }
 
     public void createFlight(Flight flight) {

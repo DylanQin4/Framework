@@ -26,6 +26,8 @@ import mg.itu.avion.reservation.Reservation;
 import mg.itu.avion.reservation.ReservationRepository;
 import mg.itu.avion.reservation.ReservationService;
 import mg.itu.avion.utils.MyBatisUtil;
+import mg.itu.avion.airplane.AirplaneRepository;
+import mg.itu.avion.airplane.AirplaneService;
 import mg.itu.avion.airplane.Class;
 import mg.itu.avion.airplane.ClassRepository;
 import mg.itu.avion.airplane.ClassService;
@@ -43,7 +45,9 @@ public class ReservationController {
         this.reservationService = new ReservationService(
             new ReservationRepository(MyBatisUtil.getSqlSessionFactory()),
             new FlightClassPassengerService(new FlightClassPassengerRepository(MyBatisUtil.getSqlSessionFactory())),
-            new PassengerTypeService(new PassengerTypeRepository(MyBatisUtil.getSqlSessionFactory()))
+            new PassengerTypeService(new PassengerTypeRepository(MyBatisUtil.getSqlSessionFactory())),
+            new AirplaneService(new AirplaneRepository(MyBatisUtil.getSqlSessionFactory())),
+            new FlightService(new FlightRepository(MyBatisUtil.getSqlSessionFactory()))
         );
         this.flightService = new FlightService(new FlightRepository(MyBatisUtil.getSqlSessionFactory()));
         this.classService = new ClassService(new ClassRepository(MyBatisUtil.getSqlSessionFactory()));
@@ -80,7 +84,6 @@ public class ReservationController {
 
         return mv;
     }
-
     @POST("reservations/add")
     @FormView("reservations/add")
     public ModelView addReservation(@ParamObject Reservation reservation, @Param(name = "filePathPassport") Part filePathPassport, MySession session) {
@@ -90,22 +93,28 @@ public class ReservationController {
             mv.setIsRedirect(true);
             return mv;            
         }
-
+    
         // Sauvegarder le fichier de passeport
         if (filePathPassport != null && filePathPassport.getSize() > 0) {
             String filePath = saveFileToServer(filePathPassport);
             System.out.println("File path: " + filePath);
             reservation.setFilePathPassport(filePath);
         }
-
+    
         // Enregistrer la réservation
         reservation.setUserId(userId);
-        reservationService.createReservation(reservation);
-
-        // Redirection vers la liste des réservations
-        ModelView mv = new ModelView("reservations");
-        mv.setIsRedirect(true);
-        return mv;
+    
+        try {
+            reservationService.createReservation(reservation);
+    
+            ModelView mv = new ModelView("reservations");
+            mv.setIsRedirect(true);
+            return mv;
+        } catch (IllegalArgumentException e) {
+            ModelView mv = new ModelView("reservations/add");
+            mv.addObject("errorMessage", e.getMessage());
+            return mv;
+        }
     }
 
     // Méthode pour sauvegarder un fichier sur le serveur

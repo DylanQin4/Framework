@@ -74,6 +74,8 @@ CREATE TABLE airplane_class (
     PRIMARY KEY (airplane_id, class_id)
 );
 
+SELECT seat_count FROM airplane_class WHERE airplane_id = 1 AND class_id = 1;
+
 -- Table country
 DROP TABLE IF EXISTS country CASCADE;
 CREATE TABLE country (

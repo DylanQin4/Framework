@@ -140,7 +140,7 @@ public class FlightController {
     @GET("flights/edit")
     public ModelView getEditFlight(@Param(name = "id") String id) {
         // Récupérer le vol à éditer
-        Flight flight = flightService.getFlightById(id);
+        Flight flight = flightService.getFlightById(Integer.parseInt(id));
         
         // Récupérer les tarifs et promotions pour ce vol
         List<FlightClassPassenger> flightClassPassengers = flightClassPassengerService.getFlightClassPassengersByFlightId(flight.getId());
