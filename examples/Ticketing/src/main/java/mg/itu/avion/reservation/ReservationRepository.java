@@ -11,6 +11,13 @@ public class ReservationRepository {
         this.sqlSessionFactory = sqlSessionFactory;
     }
 
+    public Reservation getReservationById(Integer id) {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            ReservationMapper mapper = session.getMapper(ReservationMapper.class);
+            return mapper.getReservationById(id);
+        }
+    }
+
     public List<Reservation> getAllReservations() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             ReservationMapper mapper = session.getMapper(ReservationMapper.class);
@@ -22,6 +29,14 @@ public class ReservationRepository {
         try (SqlSession session = sqlSessionFactory.openSession()) {
             ReservationMapper mapper = session.getMapper(ReservationMapper.class);
             mapper.insertReservation(reservation);
+            session.commit();
+        }
+    }
+
+    public void updateReservation(Reservation reservation) {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            ReservationMapper mapper = session.getMapper(ReservationMapper.class);
+            mapper.updateReservation(reservation);
             session.commit();
         }
     }
