@@ -7,6 +7,8 @@ import java.util.List;
 
 import lombok.AllArgsConstructor;
 import mg.itu.avion.airplane.AirplaneService;
+import mg.itu.avion.config.ConfigKey;
+import mg.itu.avion.config.ConfigurationService;
 import mg.itu.avion.flight.FlightClassPassenger;
 import mg.itu.avion.flight.FlightClassPassengerService;
 import mg.itu.avion.flight.FlightService;
@@ -20,15 +22,45 @@ public class ReservationService {
     private final PassengerTypeService passengerTypeService;
     private final AirplaneService airplaneService;
     private final FlightService flightService;
+    private final ConfigurationService configurationService;
 
     public List<Reservation> getAllReservations() {
         return reservationRepository.getAllReservations();
     }
 
+    public Reservation getReservationById(Integer id) {
+        return reservationRepository.getReservationById(id);
+    }
+
+    public void cancelReservation(Reservation reservation) {
+        LocalDateTime currentTime = LocalDateTime.now();
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setUpdatedAt(currentTime);
+        reservation.setCancellationDate(currentTime);
+
+        // verify if the annulation is not possible
+        String cancellationCutoffHours = configurationService.getConfigurationByKey(ConfigKey.CANCELLATION_CUTOFF_HOURS.getDatabaseKey()).getConfigValue();
+        int cutoffHours = Integer.parseInt(cancellationCutoffHours);
+        LocalDateTime departureTime = flightService.getFlightById(reservation.getFlightId()).getDepartureTime();
+        if (departureTime.minusHours(cutoffHours).isBefore(currentTime)) {
+            throw new IllegalArgumentException("Reservation cannot be cancelled within " + cutoffHours + " hours of departure.");
+        }
+        reservationRepository.updateReservation(reservation);
+    }
+
     public void createReservation(Reservation reservation) {
-        reservation.setCreatedAt(LocalDateTime.now());
-        reservation.setUpdatedAt(LocalDateTime.now());
+        LocalDateTime currentTime = LocalDateTime.now();
+        reservation.setCreatedAt(currentTime);
+        reservation.setUpdatedAt(currentTime);
         reservation.setStatus(ReservationStatus.RESERVED); // Default status
+
+        String reservationCutoffHours = configurationService.getConfigurationByKey(ConfigKey.RESERVATION_CUTOFF_HOURS.getDatabaseKey()).getConfigValue();
+        int cutoffHours = Integer.parseInt(reservationCutoffHours);
+        LocalDateTime departureTime = flightService.getFlightById(reservation.getFlightId()).getDepartureTime();
+        if (departureTime.minusHours(cutoffHours).isBefore(currentTime)) {
+            System.out.println("Reservation cannot be made within " + cutoffHours + " hours of departure.");
+            throw new IllegalArgumentException("Reservation cannot be made within " + cutoffHours + " hours of departure.");
+        }
 
         // get seat disponibility by classId
         int seatDispo = (int)airplaneService.getSeatCountByAirplaneIdClassId(flightService.getFlightById(reservation.getFlightId()).getAirplaneId(), reservation.getClassId());
@@ -52,9 +84,6 @@ public class ReservationService {
         }
         // Set the passenger type based on age
         Integer passengerTypeId = passengerTypeService.getPassengerTypeByAge(age).getId();
-        System.out.println("Flight ID: " + reservation.getFlightId());
-        System.out.println("Class ID: " + reservation.getClassId());
-        System.out.println("Passenger Type ID: " + passengerTypeId);
         FlightClassPassenger flightClassPassenger = flightClassPassengerService.getFlightClassPassengerById(reservation.getFlightId(), reservation.getClassId(), passengerTypeId);
 
         boolean isPromotionAvailable = false;

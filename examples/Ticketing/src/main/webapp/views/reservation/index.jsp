@@ -20,6 +20,14 @@
             </a>
         </header>
 
+        <!-- Affichage du message d'erreur -->
+        <c:if test="${not empty errorMessage}">
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">Erreur :</strong>
+                <span class="block sm:inline">${errorMessage}</span>
+            </div>
+        </c:if>
+
         <!-- Tableau des Réservations -->
         <div class="bg-white shadow overflow-hidden sm:rounded-lg">
             <table class="min-w-full divide-y divide-gray-200">
@@ -43,13 +51,16 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Date
                         </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <c:choose>
                         <c:when test="${empty reservations}">
                             <tr>
-                                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                                <td colspan="7" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                                     Aucune réservation disponible.
                                 </td>
                             </tr>
@@ -79,6 +90,20 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         ${reservation.createdAt.format(DateTimeFormatter.ofPattern('dd/MM/yyyy HH:mm'))}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <c:if test="${reservation.status != 'CANCELLED'}">
+                                            <form action="${pageContext.request.contextPath}/reservations/cancel" method="get" class="inline">
+                                                <input type="hidden" name="reservationId" value="${reservation.id}" />
+                                                <button type="submit" 
+                                                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                                    Annuler
+                                                </button>
+                                            </form>
+                                        </c:if>
+                                        <c:if test="${reservation.status == 'CANCELLED'}">
+                                            <span class="text-red-600 font-medium">Annulée</span>
+                                        </c:if>
                                     </td>
                                 </tr>
                             </c:forEach>

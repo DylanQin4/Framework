@@ -33,4 +33,30 @@ public interface ReservationMapper {
         "#{cancellationDate}, #{createdAt}, #{updatedAt})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insertReservation(Reservation reservation);
+
+    @Select("SELECT * FROM reservations WHERE id = #{id}")
+    @Results({
+        @Result(property = "id", column = "id"),
+        @Result(property = "userId", column = "user_id"),
+        @Result(property = "flightId", column = "flight_id"),
+        @Result(property = "status", column = "status"),
+        @Result(property = "amount", column = "amount"),
+        @Result(property = "discount", column = "discount"),
+        @Result(property = "passengerName", column = "passenger_name"),
+        @Result(property = "passengerBirthdate", column = "passenger_birthdate"),
+        @Result(property = "filePathPassport", column = "file_path_passport"),
+        @Result(property = "classId", column = "class_id"),
+        @Result(property = "cancellationDate", column = "cancellation_date"),
+        @Result(property = "createdAt", column = "created_at"),
+        @Result(property = "updatedAt", column = "updated_at")
+    })
+    Reservation getReservationById(Integer id);
+
+    @Update("UPDATE reservations SET " +
+        "user_id = #{userId}, flight_id = #{flightId}, status = #{status}, amount = #{amount}, " +
+        "discount = #{discount}, passenger_name = #{passengerName}, " +
+        "passenger_birthdate = CAST(#{passengerBirthdate} AS DATE), file_path_passport = #{filePathPassport}, " +
+        "class_id = #{classId}, cancellation_date = #{cancellationDate}, updated_at = #{updatedAt} " +
+        "WHERE id = #{id}")
+    void updateReservation(Reservation reservation);
 }
