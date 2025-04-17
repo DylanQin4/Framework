@@ -61,14 +61,20 @@ public class FlightController {
     @GET("flights")
     public ModelView getFlights() {
         List<Flight> flights = new FlightService(new FlightRepository(MyBatisUtil.getSqlSessionFactory())).getAllFlights();
-        ModelView mv = new ModelView("/admin/flights/index.jsp");
+        ModelView mv = new ModelView("/layouts/sidebar.jsp");
+        mv.addObject("contentJsp", "/admin/flights/index.jsp");
+        mv.addObject("pageTitle", "Liste des vols");
+        mv.addObject("activeMenu", "flights");
         mv.addObject("flights", flights);
         return mv;
     }
     
     @GET("flights/add")
     public ModelView getAddFlight() {
-        ModelView mv = new ModelView("/admin/flights/add.jsp");
+        ModelView mv = new ModelView("/layouts/sidebar.jsp");
+        mv.addObject("contentJsp", "/admin/flights/add.jsp");
+        mv.addObject("pageTitle", "Nouveau vol");
+        mv.addObject("activeMenu", "flights");
         mv.addObject("airplanes", airplaneService.getAllAirplanes());
         mv.addObject("cities", cityService.getAllCities());
         mv.addObject("classes", classService.getAllClasses());
@@ -146,7 +152,10 @@ public class FlightController {
         List<FlightClassPassenger> flightClassPassengers = flightClassPassengerService.getFlightClassPassengersByFlightId(flight.getId());
     
         // Préparer le modèle pour la vue
-        ModelView mv = new ModelView("/admin/flights/edit.jsp");
+        ModelView mv = new ModelView("/layouts/sidebar.jsp");
+        mv.addObject("contentJsp", "/admin/flights/edit.jsp");
+        mv.addObject("pageTitle", "Modification du vol " + flight.getFlightNumber());
+        mv.addObject("activeMenu", "flights");
         mv.addObject("flight", flight);
         mv.addObject("airplanes", airplaneService.getAllAirplanes());
         mv.addObject("cities", cityService.getAllCities());

@@ -69,7 +69,10 @@ public class ReservationController {
         List<Reservation> reservations = reservationService.getReservationsByUserId(userId);
 
         // Préparer le modèle pour la vue
-        ModelView mv = new ModelView("/views/reservation/index.jsp");
+        ModelView mv = new ModelView("/layouts/sidebar.jsp");
+        mv.addObject("contentJsp", "/views/reservation/index.jsp");
+        mv.addObject("activeMenu", "reservations");
+        mv.addObject("pageTitle", "Mes Réservations");
         mv.addObject("reservations", reservations); // Liste des réservations
 
         return mv;
@@ -81,7 +84,9 @@ public class ReservationController {
         List<Class> classes = classService.getAllClasses();
 
         // Préparer le modèle pour la vue
-        ModelView mv = new ModelView("/views/reservation/add.jsp");
+        ModelView mv = new ModelView("/layouts/sidebar.jsp");
+        mv.addObject("contentJsp", "/views/reservation/add.jsp");
+        mv.addObject("activeMenu", "reservations");
         mv.addObject("flights", flights); // Liste des vols
         mv.addObject("classes", classes); // Liste des classes
 
@@ -97,14 +102,18 @@ public class ReservationController {
             mv.setIsRedirect(true);
             return mv;            
         }
-    
+
+        ModelView mv = new ModelView("/layouts/sidebar.jsp");
+        mv.addObject("contentJsp", "/views/reservation/add.jsp");
+        mv.addObject("pageTitle", "Mes Réservations");
+        mv.addObject("activeMenu", "reservations");
+
         // Sauvegarder le fichier de passeport
         String fileName = null;
         if (filePathPassport != null && filePathPassport.getSize() > 0) {
             fileName = System.currentTimeMillis() + "_" + filePathPassport.getSubmittedFileName();
             reservation.setFilePathPassport(fileName);
         } else {
-            ModelView mv = new ModelView("/views/reservation/add.jsp");
             mv.addObject("errorMessage", "Please upload a passport file.");
             return mv;
         }
@@ -117,11 +126,10 @@ public class ReservationController {
             // save file to server
             saveFileToServer(filePathPassport, fileName);
 
-            ModelView mv = new ModelView("reservations");
+            mv = new ModelView("reservations");
             mv.setIsRedirect(true);
             return mv;
         } catch (IllegalArgumentException e) {
-            ModelView mv = new ModelView("/views/reservation/add.jsp");
             mv.addObject("errorMessage", e.getMessage());
             return mv;
         }
@@ -161,7 +169,9 @@ public class ReservationController {
             mv.setIsRedirect(true);
             return mv;
         } catch (IllegalArgumentException e) {
-            ModelView mv = new ModelView("/reservations");
+            ModelView mv = new ModelView("/layouts/sidebar.jsp");
+            mv.addObject("contentJsp", "/views/reservation/index.jsp");
+            mv.addObject("activeMenu", "reservations");
             mv.addObject("errorMessage", e.getMessage());
             return mv;
         }
