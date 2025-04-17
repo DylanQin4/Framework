@@ -110,13 +110,15 @@ public class ReservationController {
 
         // Sauvegarder le fichier de passeport
         String fileName = null;
-        if (filePathPassport != null && filePathPassport.getSize() > 0) {
-            fileName = System.currentTimeMillis() + "_" + filePathPassport.getSubmittedFileName();
-            reservation.setFilePathPassport(fileName);
-        } else {
+        if (filePathPassport == null || filePathPassport.getSize() == 0
+                || filePathPassport.getSubmittedFileName() == null
+                || filePathPassport.getSubmittedFileName().isEmpty()) {
             mv.addObject("errorMessage", "Please upload a passport file.");
             return mv;
         }
+
+        fileName = System.currentTimeMillis() + "_" + filePathPassport.getSubmittedFileName();
+        reservation.setFilePathPassport(fileName);
     
         // Enregistrer la réservation
         reservation.setUserId(userId);
