@@ -13,3 +13,6 @@ javac -d $OUTPUT_DIR -cp "$OUTPUT_DIR:lib/javaee-api-8.0.jar:lib/jboss-vfs-3.3.1
 
 # Creation du JAR
 jar -cvf $FRAMEWORK_JAR -C build/WEB-INF/classes/ .
+
+# copy jar to Ticketing
+cp -f $FRAMEWORK_JAR examples/Ticketing/lib/

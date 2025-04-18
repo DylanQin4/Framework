@@ -1,8 +1,13 @@
 package com.ETU1792.utils;
 
 import javax.servlet.http.*;
+import javax.xml.validation.Validator;
 
-import com.ETU1792.annotation.*;
+import com.ETU1792.annotation.FormView;
+import com.ETU1792.annotation.JSON;
+import com.ETU1792.annotation.Param;
+import com.ETU1792.annotation.ParamObject;
+import com.ETU1792.annotation.FieldName;
 import com.ETU1792.annotation.validation.Date;
 import com.ETU1792.annotation.validation.Email;
 import com.ETU1792.annotation.validation.Numeric;
@@ -20,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Utils {
     // Static instances for parameter name resolution and JSON conversion
@@ -58,7 +64,8 @@ public class Utils {
         Map<String, String> errors = new HashMap<>();
 
         // Check if the method has a FormView annotation and set the form view name
-        String formViewName = method.isAnnotationPresent(FormView.class) ? method.getAnnotation(FormView.class).value() : null;
+        FormView formView = method.getAnnotation(FormView.class);
+        String formViewName = (formView != null) ? formView.value() : null;
         request.setAttribute("formViewName", formViewName);
 
         // Collect input values from the request parameters
@@ -118,8 +125,9 @@ public class Utils {
     }
 
     // Prepares the parameters for the method invocation
-    public static List<Object> prepareMethodParameters(Object controllerInstance, Method method, HttpServletRequest request, HttpServletResponse response, Map<String, String> errors)
-            throws Exception {
+    public static List<Object> prepareMethodParameters(Object controllerInstance, Method method,
+                                                    HttpServletRequest request, HttpServletResponse response,
+                                                    Map<String, String> errors) throws Exception {
         List<Object> parametersList = new ArrayList<>();
         String[] paramNames = paranamer.lookupParameterNames(method);
         Parameter[] parameters = method.getParameters();
@@ -129,29 +137,84 @@ public class Utils {
             Class<?> paramType = param.getType();
             String paramName = (paramNames != null && paramNames.length > i) ? paramNames[i] : param.getName();
 
+            // Récupère le nom voulu (annotation @Param prioritaire)
+            Param paramAnnotation = param.getAnnotation(Param.class);
+            String name = (paramAnnotation != null && !paramAnnotation.name().isEmpty()) ? paramAnnotation.name() : paramName;
+
+            // 1) MySession
             if (paramType == MySession.class) {
                 parametersList.add(new MySession(request.getSession()));
-            } else if (Part.class.isAssignableFrom(paramType)) {
-                Param paramAnnotation = param.getAnnotation(Param.class);
-                String name = (paramAnnotation != null) ? paramAnnotation.name() : paramName;
-                Part part = request.getPart(name);
-                if (part != null && part.getSize() > 0) {
-                    parametersList.add(part);
-                } else {
-                    throw new Exception("The required file parameter " + name + " is missing or empty.");
+                continue;
+            }
+
+            // 2) Array
+            if (paramType.isArray()) {
+                Class<?> componentType = paramType.getComponentType();
+
+                // 2.a) Part[]
+                if (Part.class.isAssignableFrom(componentType)) {
+                    // Accepte name et name[]
+                    // Conserver toutes les occurrences par nom (ordre DOM), et mettre null pour les vides
+                    List<Part> all = request.getParts().stream()
+                            .filter(p -> p.getName().equals(name) || p.getName().equals(name + "[]"))
+                            .collect(Collectors.toList());
+
+                    Part[] arr = new Part[all.size()];
+                    for (int idx = 0; idx < all.size(); idx++) {
+                        Part p = all.get(idx);
+                        if (p != null && p.getSize() > 0 && p.getSubmittedFileName() != null && !p.getSubmittedFileName().isEmpty()) {
+                            arr[idx] = p;
+                        } else {
+                            arr[idx] = null;
+                        }
+                    }
+                    parametersList.add(arr);
+                    continue;
                 }
-            } else if (param.isAnnotationPresent(Param.class)) {
-                Param paramAnnotation = param.getAnnotation(Param.class);
-                String name = paramAnnotation.name();
+
+                // 2.b) String[] / Integer[] / Double[] / LocalDate[] ...
+                String[] values = request.getParameterValues(name);
+                if (values == null) values = request.getParameterValues(name + "[]");
+                if (values == null) values = new String[0];
+
+                Object array = Array.newInstance(componentType, values.length);
+                for (int vi = 0; vi < values.length; vi++) {
+                    Object converted = convertType(componentType, values[vi]);
+                    Array.set(array, vi, converted);
+                }
+                parametersList.add(array);
+                continue;
+            }
+
+            // 3) Part (scalaire)
+            if (Part.class.isAssignableFrom(paramType)) {
+                Part part = request.getPart(name);
+                if (part == null || part.getSize() == 0 || part.getSubmittedFileName() == null
+                        || part.getSubmittedFileName().isEmpty()) {
+                    parametersList.add(null);
+                } else {
+                    parametersList.add(part);
+                }
+                continue;
+            }
+
+            // 4) @Param scalaire
+            if (param.isAnnotationPresent(Param.class)) {
                 String value = request.getParameter(name);
                 parametersList.add(convertType(paramType, value));
-            } else if (param.isAnnotationPresent(ParamObject.class)) {
+                continue;
+            }
+
+            // 5) @ParamObject
+            if (param.isAnnotationPresent(ParamObject.class)) {
                 Object obj = processParamObject(paramType, request, response, method, errors);
                 parametersList.add(obj);
-            } else {
-                String value = request.getParameter(paramName);
-                parametersList.add(convertType(paramType, value));
+                continue;
             }
+
+            // 6) Scalaire par défaut (nom de variable)
+            String value = request.getParameter(paramName);
+            parametersList.add(convertType(paramType, value));
         }
         return parametersList;
     }
@@ -259,13 +322,13 @@ public class Utils {
         }
         if (value != null && !value.isEmpty()) {
             for (Annotation annotation : field.getAnnotations()) {
-                if (annotation instanceof Email && !Validator.isValidEmail(value)) {
+                if (annotation instanceof Email && !com.ETU1792.utils.Validator.isValidEmail(value)) {
                     throw new Exception("The field " + field.getName() + " must be a valid email.");
                 }
-                if (annotation instanceof Date && !Validator.isValidDate(value)) {
+                if (annotation instanceof Date && !com.ETU1792.utils.Validator.isValidDate(value)) {
                     throw new Exception("The field " + field.getName() + " must be a valid date.");
                 }
-                if (annotation instanceof Numeric && !Validator.isNumeric(value)) {
+                if (annotation instanceof Numeric && !com.ETU1792.utils.Validator.isNumeric(value)) {
                     throw new Exception("The field " + field.getName() + " must be numeric.");
                 }
             }

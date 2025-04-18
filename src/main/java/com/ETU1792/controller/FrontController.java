@@ -43,12 +43,8 @@ public class FrontController extends HttpServlet {
         try {
             initializeControllerClasses();
             this.urlMappings = new Mapping().generateMappings(controllerClasses);
-            if (urlMappings == null) {
-                throw new ServletException("Duplicate annotations detected in methods.");
-            }
-            
-        } catch (Exception e) {
-            throw new ServletException("Initialization error : " + e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            throw new ServletException("Duplicate mapping: " + e.getMessage(), e);
         }
     }
 
