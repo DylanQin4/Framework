@@ -116,6 +116,9 @@
             </c:when>
             <c:otherwise>
               <c:forEach var="p" items="${reservation.passengers}">
+                <c:url var="passportUrl" value="/file.jsp">
+                  <c:param name="name" value="${p.filePathPassport}"/>
+                </c:url>
                 <tr>
                   <td class="px-4 py-2 text-gray-900">${p.passengerName}</td>
                   <td class="px-4 py-2 text-gray-700">
@@ -145,15 +148,7 @@
                     </c:if>
                   </td>
                   <td class="px-4 py-2">
-                    <c:choose>
-                      <c:when test="${not empty p.filePathPassport}">
-                        <a href="${p.filePathPassport}" target="_blank"
-                           class="text-indigo-600 hover:underline">Voir</a>
-                      </c:when>
-                      <c:otherwise>
-                        <span class="text-gray-400">N/A</span>
-                      </c:otherwise>
-                    </c:choose>
+                    <img src="${passportUrl}" alt="Passeport" class="h-32 w-auto"/>
                   </td>
                 </tr>
               </c:forEach>
