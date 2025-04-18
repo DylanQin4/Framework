@@ -33,6 +33,7 @@ public class MyBatisUtil {
         configuration.addMapper(mg.itu.avion.airplane.ClassMapper.class);
         configuration.addMapper(mg.itu.avion.passenger.PassengerTypeMapper.class);
         configuration.addMapper(mg.itu.avion.reservation.ReservationMapper.class);
+        configuration.addMapper(mg.itu.avion.reservation.ReservationPassengerMapper.class);
         configuration.addMapper(mg.itu.avion.flight.FlightClassPassengerMapper.class);
         configuration.addMapper(mg.itu.avion.passenger.ConfigFaresMapper.class);
         configuration.addMapper(mg.itu.avion.airplane.AirplaneClassMapper.class);

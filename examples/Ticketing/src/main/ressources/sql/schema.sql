@@ -146,15 +146,26 @@ CREATE TABLE reservations (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     flight_id INTEGER NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
     status VARCHAR(20) NOT NULL DEFAULT 'RESERVED' CHECK (status IN ('RESERVED', 'CANCELLED', 'PAID', 'PENDING')),
-    amount NUMERIC(10,2),
-    discount NUMERIC(5,2) DEFAULT 0.00,
-    passenger_name VARCHAR(100) NOT NULL,
-    passenger_birthdate DATE NOT NULL,
-    file_path_passport VARCHAR(255) NOT NULL,
-    class_id INTEGER NOT NULL REFERENCES class(id) ON DELETE CASCADE,
-    cancellation_date TIMESTAMP,
+    total_amount NUMERIC(10,2),
+    total_discount NUMERIC(5,2) DEFAULT 0.00,
+    cancelled_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE reservation_passengers (
+    id SERIAL PRIMARY KEY,
+    reservation_id INTEGER NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+    passenger_name VARCHAR(100) NOT NULL,
+    passenger_birthdate DATE NOT NULL,
+    passenger_type_id INTEGER REFERENCES passenger_type(id),
+    class_id INTEGER NOT NULL REFERENCES class(id) ON DELETE CASCADE,
+    base_price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    discount NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    final_price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+    promo_applied BOOLEAN NOT NULL DEFAULT FALSE,
+    file_path_passport VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 ---------------------------------------------------------------------

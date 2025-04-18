@@ -5,7 +5,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import java.util.List;
 
 public class ReservationRepository {
-    private SqlSessionFactory sqlSessionFactory;
+    private final SqlSessionFactory sqlSessionFactory;
 
     public ReservationRepository(SqlSessionFactory sqlSessionFactory) {
         this.sqlSessionFactory = sqlSessionFactory;
@@ -13,22 +13,39 @@ public class ReservationRepository {
 
     public Reservation getReservationById(Integer id) {
         try (SqlSession session = sqlSessionFactory.openSession()) {
-            ReservationMapper mapper = session.getMapper(ReservationMapper.class);
-            return mapper.getReservationById(id);
+            ReservationMapper rm = session.getMapper(ReservationMapper.class);
+            ReservationPassengerMapper rpm = session.getMapper(ReservationPassengerMapper.class);
+            Reservation r = rm.getReservationById(id);
+            if (r != null) {
+                r.setPassengers(rpm.findByReservationId(r.getId()));
+            }
+            return r;
         }
     }
 
     public List<Reservation> getAllReservations() {
         try (SqlSession session = sqlSessionFactory.openSession()) {
-            ReservationMapper mapper = session.getMapper(ReservationMapper.class);
-            return mapper.getAllReservations();
+            ReservationMapper rm = session.getMapper(ReservationMapper.class);
+            ReservationPassengerMapper rpm = session.getMapper(ReservationPassengerMapper.class);
+            List<Reservation> list = rm.getAllReservations();
+            for (Reservation r : list) {
+                r.setPassengers(rpm.findByReservationId(r.getId()));
+            }
+            return list;
         }
     }
 
-    public void saveReservation(Reservation reservation) {
+    /** Insert entête + lignes (transaction MyBatis au niveau session). */
+    public void saveReservationWithPassengers(Reservation reservation, List<ReservationPassenger> passengers) {
         try (SqlSession session = sqlSessionFactory.openSession()) {
-            ReservationMapper mapper = session.getMapper(ReservationMapper.class);
-            mapper.insertReservation(reservation);
+            ReservationMapper rm = session.getMapper(ReservationMapper.class);
+            ReservationPassengerMapper rpm = session.getMapper(ReservationPassengerMapper.class);
+
+            rm.insertReservation(reservation);
+            for (ReservationPassenger p : passengers) {
+                p.setReservationId(reservation.getId());
+                rpm.insert(p);
+            }
             session.commit();
         }
     }
@@ -38,6 +55,13 @@ public class ReservationRepository {
             ReservationMapper mapper = session.getMapper(ReservationMapper.class);
             mapper.updateReservation(reservation);
             session.commit();
+        }
+    }
+
+    public int countReservedSeatsByFlightAndClass(Integer flightId, Integer classId) {
+        try (SqlSession session = sqlSessionFactory.openSession()) {
+            ReservationPassengerMapper rpm = session.getMapper(ReservationPassengerMapper.class);
+            return rpm.countReservedSeatsByFlightAndClass(flightId, classId);
         }
     }
 }

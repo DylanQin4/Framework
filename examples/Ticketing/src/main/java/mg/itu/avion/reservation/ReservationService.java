@@ -33,98 +33,92 @@ public class ReservationService {
     }
 
     public void cancelReservation(Reservation reservation) {
-        LocalDateTime currentTime = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
         reservation.setStatus(ReservationStatus.CANCELLED);
-        reservation.setUpdatedAt(currentTime);
-        reservation.setCancellationDate(currentTime);
+        reservation.setUpdatedAt(now);
+        reservation.setCancelledAt(now);
 
-        // verify if the annulation is not possible
-        String cancellationCutoffHours = configurationService.getConfigurationByKey(ConfigKey.CANCELLATION_CUTOFF_HOURS.getDatabaseKey()).getConfigValue();
-        int cutoffHours = Integer.parseInt(cancellationCutoffHours);
+        int cutoffHours = Integer.parseInt(
+            configurationService.getConfigurationByKey(ConfigKey.CANCELLATION_CUTOFF_HOURS.getDatabaseKey())
+                                .getConfigValue()
+        );
         LocalDateTime departureTime = flightService.getFlightById(reservation.getFlightId()).getDepartureTime();
-        if (departureTime.minusHours(cutoffHours).isBefore(currentTime)) {
+        if (departureTime.minusHours(cutoffHours).isBefore(now)) {
             throw new IllegalArgumentException("Reservation cannot be cancelled within " + cutoffHours + " hours of departure.");
         }
         reservationRepository.updateReservation(reservation);
     }
 
-    public void createReservation(Reservation reservation) {
-        LocalDateTime currentTime = LocalDateTime.now();
-        reservation.setCreatedAt(currentTime);
-        reservation.setUpdatedAt(currentTime);
-        reservation.setStatus(ReservationStatus.RESERVED); // Default status
+    /** Création d'une réservation avec N passagers */
+    public void createReservation(Reservation header, List<ReservationPassenger> passengers) {
+        LocalDateTime now = LocalDateTime.now();
+        header.setCreatedAt(now);
+        header.setUpdatedAt(now);
+        header.setStatus(ReservationStatus.RESERVED);
 
-        String reservationCutoffHours = configurationService.getConfigurationByKey(ConfigKey.RESERVATION_CUTOFF_HOURS.getDatabaseKey()).getConfigValue();
-        int cutoffHours = Integer.parseInt(reservationCutoffHours);
-        LocalDateTime departureTime = flightService.getFlightById(reservation.getFlightId()).getDepartureTime();
-        if (departureTime.minusHours(cutoffHours).isBefore(currentTime)) {
-            System.out.println("Reservation cannot be made within " + cutoffHours + " hours of departure.");
+        int cutoffHours = Integer.parseInt(
+            configurationService.getConfigurationByKey(ConfigKey.RESERVATION_CUTOFF_HOURS.getDatabaseKey())
+                                .getConfigValue()
+        );
+        LocalDateTime departureTime = flightService.getFlightById(header.getFlightId()).getDepartureTime();
+        if (departureTime.minusHours(cutoffHours).isBefore(now)) {
             throw new IllegalArgumentException("Reservation cannot be made within " + cutoffHours + " hours of departure.");
         }
 
-        // get seat disponibility by classId
-        int seatDispo = (int)airplaneService.getSeatCountByAirplaneIdClassId(flightService.getFlightById(reservation.getFlightId()).getAirplaneId(), reservation.getClassId());
-        int seatReserved = countReservationsByFlightIdClassId(reservation.getFlightId(), reservation.getClassId());
-        System.out.println("Seat available: " + seatDispo);
-        System.out.println("Seat reserved: " + seatReserved);
-        // check if there is available seat
-        if (seatDispo <= seatReserved) {
-            throw new IllegalArgumentException("No available seats in this class.");
+        double totalAmount = 0.0;
+        double totalDiscount = 0.0;
+
+        for (ReservationPassenger p : passengers) {
+            // 1) Type d'âge
+            int age = Period.between(p.getPassengerBirthdate(), LocalDate.now()).getYears();
+            PassengerType pt = passengerTypeService.getPassengerTypeByAge(age);
+            if (pt == null) throw new IllegalArgumentException("Invalid passenger type for age: " + age);
+            p.setPassengerTypeId(pt.getId());
+
+            // 2) Dispo par classe (via details, pas entêtes)
+            int totalSeats = (int) airplaneService.getSeatCountByAirplaneIdClassId(
+                flightService.getFlightById(header.getFlightId()).getAirplaneId(),
+                p.getClassId()
+            );
+            int alreadyBooked = reservationRepository.countReservedSeatsByFlightAndClass(header.getFlightId(), p.getClassId());
+            if (alreadyBooked >= totalSeats) {
+                throw new IllegalArgumentException("No available seats in this class.");
+            }
+
+            // 3) Tarifs & promo
+            FlightClassPassenger fcp = flightClassPassengerService.getFlightClassPassengerById(
+                header.getFlightId(), p.getClassId(), pt.getId()
+            );
+            if (fcp == null) {
+                throw new IllegalArgumentException("No fare configured for class " + p.getClassId() + " and passenger type " + pt.getId());
+            }
+
+            double base = fcp.getBasePrice() != null ? fcp.getBasePrice() : 0.0;
+            int promoLimit = fcp.getPromotionLimit() != null ? fcp.getPromotionLimit() : 0;
+            boolean promo = alreadyBooked < promoLimit;
+
+            double discount = promo ? (fcp.getPromotionDiscount() != null ? fcp.getPromotionDiscount() : 0.0) : 0.0;
+            double finalPrice = Math.max(0.0, base - discount);
+
+            p.setBasePrice(base);
+            p.setDiscount(discount);
+            p.setFinalPrice(finalPrice);
+            p.setPromoApplied(promo);
+            p.setCreatedAt(now);
+
+            totalAmount += finalPrice;
+            totalDiscount += discount;
         }
 
-        // get age of the passenger
-        LocalDate birthDate = reservation.getPassengerBirthdate();
-        LocalDate today = LocalDate.now();
-        int age = Period.between(birthDate, today).getYears();
-        PassengerType passengerType = passengerTypeService.getPassengerTypeByAge(age);
-        if (passengerType != null) {
-            reservation.setClassId(passengerType.getId());
-        } else {
-            throw new IllegalArgumentException("Invalid passenger type for age: " + age);
-        }
-        // Set the passenger type based on age
-        Integer passengerTypeId = passengerTypeService.getPassengerTypeByAge(age).getId();
-        FlightClassPassenger flightClassPassenger = flightClassPassengerService.getFlightClassPassengerById(reservation.getFlightId(), reservation.getClassId(), passengerTypeId);
+        header.setTotalAmount(totalAmount);
+        header.setTotalDiscount(totalDiscount);
 
-        boolean isPromotionAvailable = false;
-        int nbReservations = countReservationsByFlightId(reservation.getFlightId());
-        int maxReservations = flightClassPassenger.getPromotionLimit();
-        if (nbReservations < maxReservations) {
-            isPromotionAvailable = true;
-        }
-
-        if (isPromotionAvailable) {
-            reservation.setDiscount(flightClassPassenger.getPromotionDiscount());
-        } else {
-            reservation.setDiscount(0.0);
-        }
-
-        // Set the total amount based on the flight and class
-        Double flightPrice = flightClassPassenger.getBasePrice();
-
-        reservation.setAmount(flightPrice);
-
-        reservationRepository.saveReservation(reservation);
-    }
-
-    public int countReservationsByFlightId(Integer flightId) {
-        List<Reservation> reservations = reservationRepository.getAllReservations();
-        return (int) reservations.stream()
-                .filter(reservation -> reservation.getFlightId().equals(flightId))
-                .count();
-    }
-
-    public int countReservationsByFlightIdClassId(Integer flightId, Integer classId) {
-        List<Reservation> reservations = reservationRepository.getAllReservations();
-        return (int) reservations.stream()
-                .filter(reservation -> reservation.getFlightId().equals(flightId) && reservation.getClassId().equals(classId))
-                .count();
+        // Persist entête + lignes
+        reservationRepository.saveReservationWithPassengers(header, passengers);
     }
 
     public List<Reservation> getReservationsByUserId(Integer userId) {
-        List<Reservation> reservations = reservationRepository.getAllReservations();
-        return reservations.stream()
-                .filter(reservation -> reservation.getUserId().equals(userId))
-                .toList();
+        return reservationRepository.getAllReservations()
+                .stream().filter(r -> r.getUserId().equals(userId)).toList();
     }
 }

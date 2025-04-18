@@ -1,6 +1,12 @@
 package mg.itu.avion.controller;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.Part;
 
@@ -10,7 +16,6 @@ import com.ETU1792.annotation.FormView;
 import com.ETU1792.annotation.GET;
 import com.ETU1792.annotation.POST;
 import com.ETU1792.annotation.Param;
-import com.ETU1792.annotation.ParamObject;
 import com.ETU1792.annotation.Role;
 import com.ETU1792.utils.ModelView;
 import com.ETU1792.utils.MySession;
@@ -23,8 +28,10 @@ import mg.itu.avion.flight.FlightService;
 import mg.itu.avion.passenger.PassengerTypeRepository;
 import mg.itu.avion.passenger.PassengerTypeService;
 import mg.itu.avion.reservation.Reservation;
+import mg.itu.avion.reservation.ReservationPassenger;
 import mg.itu.avion.reservation.ReservationRepository;
 import mg.itu.avion.reservation.ReservationService;
+import mg.itu.avion.reservation.ReservationStatus;
 import mg.itu.avion.utils.MyBatisUtil;
 import mg.itu.avion.airplane.AirplaneRepository;
 import mg.itu.avion.airplane.AirplaneService;
@@ -38,7 +45,7 @@ import mg.itu.avion.config.ConfigurationService;
 @Authentified
 @Role({"USER", "ADMIN"})
 public class ReservationController {
-    
+
     private final ReservationService reservationService;
     private final FlightService flightService;
     private final ClassService classService;
@@ -59,22 +66,19 @@ public class ReservationController {
     @GET("reservations")
     public ModelView getAllReservations(MySession session) {
         Integer userId = (Integer) session.get("userId");
-        if (session.get("userId") == null) {
+        if (userId == null) {
             ModelView mv = new ModelView("login");
             mv.setIsRedirect(true);
-            return mv;            
+            return mv;
         }
 
-        // Récupérer toutes les réservations
         List<Reservation> reservations = reservationService.getReservationsByUserId(userId);
 
-        // Préparer le modèle pour la vue
         ModelView mv = new ModelView("/layouts/sidebar.jsp");
         mv.addObject("contentJsp", "/views/reservation/index.jsp");
         mv.addObject("activeMenu", "reservations");
         mv.addObject("pageTitle", "Mes Réservations");
-        mv.addObject("reservations", reservations); // Liste des réservations
-
+        mv.addObject("reservations", reservations);
         return mv;
     }
 
@@ -83,69 +87,111 @@ public class ReservationController {
         List<Flight> flights = flightService.getAllFlights();
         List<Class> classes = classService.getAllClasses();
 
-        // Préparer le modèle pour la vue
         ModelView mv = new ModelView("/layouts/sidebar.jsp");
         mv.addObject("contentJsp", "/views/reservation/add.jsp");
         mv.addObject("activeMenu", "reservations");
-        mv.addObject("flights", flights); // Liste des vols
-        mv.addObject("classes", classes); // Liste des classes
-
+        mv.addObject("pageTitle", "Ajouter une Réservation");
+        mv.addObject("flights", flights);
+        mv.addObject("classes", classes);
         return mv;
     }
 
     @POST("reservations/add")
     @FormView("reservations/add")
-    public ModelView addReservation(@ParamObject Reservation reservation, @Param(name = "filePathPassport") Part filePathPassport, MySession session) {
+    public ModelView addReservation(
+        @Param(name = "flightId") Integer flightId,
+        @Param(name = "passengerName") String[] passengerNames,
+        @Param(name = "passengerBirthdate") String[] passengerBirthdates, // yyyy-MM-dd
+        @Param(name = "classId") Integer[] classIds,
+        @Param(name = "filePathPassport") Part[] filePathPassports,       // optionnel, 1 fichier par passager
+        MySession session
+    ) {
         Integer userId = (Integer) session.get("userId");
-        if (session.get("userId") == null) {
+        if (userId == null) {
             ModelView mv = new ModelView("login");
             mv.setIsRedirect(true);
-            return mv;            
-        }
-
-        ModelView mv = new ModelView("/layouts/sidebar.jsp");
-        mv.addObject("contentJsp", "/views/reservation/add.jsp");
-        mv.addObject("pageTitle", "Mes Réservations");
-        mv.addObject("activeMenu", "reservations");
-
-        // Sauvegarder le fichier de passeport
-        String fileName = null;
-        if (filePathPassport == null || filePathPassport.getSize() == 0
-                || filePathPassport.getSubmittedFileName() == null
-                || filePathPassport.getSubmittedFileName().isEmpty()) {
-            mv.addObject("errorMessage", "Please upload a passport file.");
             return mv;
         }
 
-        fileName = System.currentTimeMillis() + "_" + filePathPassport.getSubmittedFileName();
-        reservation.setFilePathPassport(fileName);
-    
-        // Enregistrer la réservation
-        reservation.setUserId(userId);
-    
+        System.out.println("Adding reservation for userId: " + userId);
+        System.out.println("Flight ID: " + flightId);
+        System.out.println("Passenger Names: " + (passengerNames != null ? String.join(", ", passengerNames) : "null"));
+        System.out.println("Passenger Birthdates: " + (passengerBirthdates != null ? String.join(", ", passengerBirthdates) : "null"));
+        System.out.println("Class IDs: " + (classIds != null ? String.join(", ", Arrays.stream(classIds).map(String::valueOf).toArray(String[]::new)) : "null"));
+        System.out.println("File Path Passports: " + (filePathPassports != null ? Arrays.stream(filePathPassports).map(Part::getSubmittedFileName).collect(Collectors.joining(", ")) : "null"));
+
+        ModelView mv = new ModelView("/layouts/sidebar.jsp");
+        mv.addObject("contentJsp", "/views/reservation/add.jsp");
+        mv.addObject("activeMenu", "reservations");
+        mv.addObject("pageTitle", "Ajouter une Réservation");
+        mv.addObject("flights", flightService.getAllFlights());
+        mv.addObject("classes", classService.getAllClasses());
+
         try {
-            reservationService.createReservation(reservation);
-            // save file to server
-            saveFileToServer(filePathPassport, fileName);
+            if (flightId == null) throw new IllegalArgumentException("Vol non renseigné.");
+            if (passengerNames == null || passengerBirthdates == null || classIds == null)
+                throw new IllegalArgumentException("Champs passagers manquants.");
+            int n = passengerNames.length;
+            if (passengerBirthdates.length != n || classIds.length != n)
+                throw new IllegalArgumentException("Les champs passagers n'ont pas la même longueur.");
+
+            // Entête
+            Reservation header = new Reservation();
+            header.setUserId(userId);
+            header.setFlightId(flightId);
+            header.setStatus(ReservationStatus.RESERVED);
+            header.setCreatedAt(LocalDateTime.now());
+            header.setUpdatedAt(LocalDateTime.now());
+            header.setTotalAmount(0.0);
+            header.setTotalDiscount(0.0);
+
+            // Détails
+            List<ReservationPassenger> passengers = new ArrayList<>();
+            DateTimeFormatter df = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+            for (int i = 0; i < n; i++) {
+                String name = (passengerNames[i] != null) ? passengerNames[i].trim() : null;
+                String birth = (passengerBirthdates[i] != null) ? passengerBirthdates[i].trim() : null;
+                Integer cls = classIds[i];
+
+                if (name == null || name.isEmpty() || birth == null || birth.isEmpty() || cls == null) {
+                    throw new IllegalArgumentException("Données passager incomplètes (index " + i + ").");
+                }
+
+                ReservationPassenger p = new ReservationPassenger();
+                p.setPassengerName(name);
+                p.setPassengerBirthdate(LocalDate.parse(birth, df));
+                p.setClassId(cls);
+                p.setCreatedAt(LocalDateTime.now());
+
+                // Fichier passeport (optionnel)
+                if (filePathPassports != null && i < filePathPassports.length) {
+                    Part part = filePathPassports[i];
+                    if (part != null && part.getSize() > 0 &&
+                        part.getSubmittedFileName() != null && !part.getSubmittedFileName().isEmpty()) {
+                        String fileName = System.currentTimeMillis() + "_" + part.getSubmittedFileName();
+                        saveFileToServer(part, fileName);
+                        p.setFilePathPassport(fileName);
+                    }
+                }
+
+                passengers.add(p);
+            }
+
+            // Persist: calcule types/prix/promo/total et insère entête + lignes
+            reservationService.createReservation(header, passengers);
 
             mv = new ModelView("reservations");
             mv.setIsRedirect(true);
             return mv;
-        } catch (IllegalArgumentException e) {
-            mv.addObject("errorMessage", e.getMessage());
-            return mv;
-        }
-    }
 
-    // Méthode pour sauvegarder un fichier sur le serveur
-    private void saveFileToServer(Part filePart, String fileName) {
-        try {
-            System.out.println("File name: " + fileName);
-            String uploadPath = "/var/itu/LohataonaFramework/uploads/" + fileName;
-            System.out.println("Upload path: " + uploadPath);
-            filePart.write(uploadPath);
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IllegalArgumentException ex) {
+            mv.addObject("errorMessage", ex.getMessage());
+            return mv;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            mv.addObject("errorMessage", "Erreur lors de la création de la réservation.");
+            return mv;
         }
     }
 
@@ -160,13 +206,9 @@ public class ReservationController {
 
         try {
             Reservation reservation = reservationService.getReservationById(reservationId);
-            if (reservation == null) {
-                throw new IllegalArgumentException("Reservation not found.");
-            }
-
+            if (reservation == null) throw new IllegalArgumentException("Reservation not found.");
             reservationService.cancelReservation(reservation);
 
-            // Redirection vers la liste des réservations
             ModelView mv = new ModelView("reservations");
             mv.setIsRedirect(true);
             return mv;
@@ -176,6 +218,16 @@ public class ReservationController {
             mv.addObject("activeMenu", "reservations");
             mv.addObject("errorMessage", e.getMessage());
             return mv;
+        }
+    }
+
+    // ====== UPLOAD ======
+    private void saveFileToServer(Part filePart, String fileName) {
+        try {
+            String uploadPath = "/var/itu/LohataonaFramework/uploads/" + fileName;
+            filePart.write(uploadPath);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
