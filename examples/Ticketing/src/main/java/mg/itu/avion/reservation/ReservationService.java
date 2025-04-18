@@ -121,4 +121,64 @@ public class ReservationService {
         return reservationRepository.getAllReservations()
                 .stream().filter(r -> r.getUserId().equals(userId)).toList();
     }
+
+    public void updateReservationWithPassengers(Reservation header, List<ReservationPassenger> passengers) {
+        // 1) Vérifier cutoff (mêmes règles que create)
+        int cutoffHours = Integer.parseInt(
+            configurationService.getConfigurationByKey(ConfigKey.RESERVATION_CUTOFF_HOURS.getDatabaseKey()).getConfigValue()
+        );
+        var flight = flightService.getFlightById(header.getFlightId());
+        var now = java.time.LocalDateTime.now();
+        if (flight.getDepartureTime().minusHours(cutoffHours).isBefore(now)) {
+            throw new IllegalArgumentException("Impossible de modifier la réservation à moins de " + cutoffHours + "h du départ.");
+        }
+
+        // 2) On supprime d'abord toutes les lignes existantes
+        reservationRepository.deletePassengersByReservationId(header.getId());
+
+        // 3) Recalcule tarifs/age/promo, puis insère les nouvelles lignes (comme createReservation)
+        double totalAmount = 0.0;
+        double totalDiscount = 0.0;
+
+        for (ReservationPassenger p : passengers) {
+            int age = java.time.Period.between(p.getPassengerBirthdate(), java.time.LocalDate.now()).getYears();
+            var pt = passengerTypeService.getPassengerTypeByAge(age);
+            if (pt == null) throw new IllegalArgumentException("Type passager invalide pour l'âge: " + age);
+            p.setPassengerTypeId(pt.getId());
+
+            int totalSeats = (int) airplaneService.getSeatCountByAirplaneIdClassId(flight.getAirplaneId(), p.getClassId());
+            int alreadyBooked = reservationRepository.countReservedSeatsByFlightAndClass(header.getFlightId(), p.getClassId());
+            if (alreadyBooked >= totalSeats) {
+                throw new IllegalArgumentException("Plus de siège disponible dans cette classe.");
+            }
+
+            var fcp = flightClassPassengerService.getFlightClassPassengerById(header.getFlightId(), p.getClassId(), pt.getId());
+            if (fcp == null) throw new IllegalArgumentException("Tarif indisponible pour cette classe/type de passager.");
+
+            double base = fcp.getBasePrice() != null ? fcp.getBasePrice() : 0.0;
+            int promoLimit = fcp.getPromotionLimit() != null ? fcp.getPromotionLimit() : 0;
+            boolean promo = alreadyBooked < promoLimit;
+            double discount = promo ? (fcp.getPromotionDiscount() != null ? fcp.getPromotionDiscount() : 0.0) : 0.0;
+            double finalPrice = Math.max(0.0, base - discount);
+
+            p.setBasePrice(base);
+            p.setDiscount(discount);
+            p.setFinalPrice(finalPrice);
+            p.setPromoApplied(promo);
+            p.setCreatedAt(now);
+        }
+
+        for (ReservationPassenger p : passengers) {
+            totalAmount += p.getFinalPrice() != null ? p.getFinalPrice() : 0.0;
+            totalDiscount += p.getDiscount() != null ? p.getDiscount() : 0.0;
+        }
+
+        header.setTotalAmount(totalAmount);
+        header.setTotalDiscount(totalDiscount);
+        header.setUpdatedAt(now);
+
+        // 4) Sauvegarde : update header + insert lignes
+        reservationRepository.updateReservation(header);
+        reservationRepository.savePassengers(header.getId(), passengers);
+    }
 }

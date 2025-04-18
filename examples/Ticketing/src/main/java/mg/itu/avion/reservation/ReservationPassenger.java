@@ -30,4 +30,9 @@ public class ReservationPassenger {
     public Date getCreatedAtAsDate() {
         return createdAt == null ? null : Date.from(createdAt.atZone(ZoneId.systemDefault()).toInstant());
     }
+
+    public Date getPassengerBirthdateAsDate() {
+        return passengerBirthdate == null ? null
+            : Date.from(passengerBirthdate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    }
 }

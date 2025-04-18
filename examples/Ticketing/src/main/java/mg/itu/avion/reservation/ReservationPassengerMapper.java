@@ -43,4 +43,9 @@ public interface ReservationPassengerMapper {
         """)
     int countReservedSeatsByFlightAndClass(@Param("flightId") Integer flightId,
                                            @Param("classId") Integer classId);
+
+    
+    @Delete("DELETE FROM reservation_passengers WHERE reservation_id = #{reservationId}")
+    void deleteByReservationId(@Param("reservationId") Integer reservationId);
+
 }

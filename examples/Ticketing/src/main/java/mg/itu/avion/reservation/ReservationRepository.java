@@ -64,4 +64,23 @@ public class ReservationRepository {
             return rpm.countReservedSeatsByFlightAndClass(flightId, classId);
         }
     }
+
+    public void deletePassengersByReservationId(Integer reservationId) {
+        try (var session = sqlSessionFactory.openSession()) {
+            var rpm = session.getMapper(ReservationPassengerMapper.class);
+            rpm.deleteByReservationId(reservationId);
+            session.commit();
+        }
+    }
+
+    public void savePassengers(Integer reservationId, List<ReservationPassenger> passengers) {
+        try (var session = sqlSessionFactory.openSession()) {
+            var rpm = session.getMapper(ReservationPassengerMapper.class);
+            for (ReservationPassenger p : passengers) {
+                p.setReservationId(reservationId);
+                rpm.insert(p);
+            }
+            session.commit();
+        }
+    }
 }
