@@ -43,6 +43,15 @@
         </li>
         <li>
           <a
+            href="${pageContext.request.contextPath}/flights/search"
+            class="${activeMenu == 'searchFlights'
+              ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
+              : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
+            Recherche de vols
+          </a>
+        </li>
+        <li>
+          <a
             href="${pageContext.request.contextPath}/reservations"
             class="${activeMenu == 'reservations'
               ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'

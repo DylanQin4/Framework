@@ -6,6 +6,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 
 import mg.itu.avion.airplane.AirplaneRepository;
 import mg.itu.avion.city.CityRepository;
+import mg.itu.avion.flight.search.FlightSearchCriteria;
 
 public class FlightRepository {
     private SqlSessionFactory sqlSessionFactory;
@@ -55,6 +56,16 @@ public class FlightRepository {
             FlightMapper mapper = session.getMapper(FlightMapper.class);
             mapper.deleteFlight(id);
             session.commit();
+        }
+    }
+
+    public List<Flight> searchFlightsAdvanced(FlightSearchCriteria criteria) {
+        try (SqlSession s = sqlSessionFactory.openSession()) {
+            FlightMapper m = s.getMapper(FlightMapper.class);
+            return m.searchFlightsAdvanced(criteria);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of(); // Return an empty list in case of error
         }
     }
 }

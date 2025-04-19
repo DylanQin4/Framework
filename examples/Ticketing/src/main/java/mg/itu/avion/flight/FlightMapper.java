@@ -5,6 +5,8 @@ import org.apache.ibatis.mapping.FetchType;
 
 import mg.itu.avion.airplane.Airplane;
 import mg.itu.avion.city.City;
+import mg.itu.avion.flight.search.FlightSearchCriteria;
+import mg.itu.avion.flight.search.FlightSqlBuilder;
 
 import java.util.List;
 
@@ -61,4 +63,33 @@ public interface FlightMapper {
 
     @Delete("DELETE FROM flights WHERE id = #{id}")
     void deleteFlight(Integer id);
+
+    @Results(id="FlightJoinMap", value = {
+        @Result(property="id",                       column="id"),
+        @Result(property="flightNumber",            column="flight_number"),
+        @Result(property="departureTime",           column="departure_time"),
+        @Result(property="arrivalTime",             column="arrival_time"),
+        @Result(property="reservationCutoffHours",  column="reservation_cutoff_hours"),
+        @Result(property="cancellationCutoffHours", column="cancellation_cutoff_hours"),
+        @Result(property="airplaneId",              column="airplane_id"),
+        @Result(property="departureCityId",         column="departure_city_id"),
+        @Result(property="arrivalCityId",           column="arrival_city_id"),
+        @Result(property="createdAt",               column="created_at"),
+
+        // City (départ/arrivée)
+        @Result(property="departureCity.id",          column="dep_id"),
+        @Result(property="departureCity.name",        column="dep_name"),
+        @Result(property="departureCity.countryName", column="dep_country_name"),
+
+        @Result(property="arrivalCity.id",            column="arr_id"),
+        @Result(property="arrivalCity.name",          column="arr_name"),
+        @Result(property="arrivalCity.countryName",   column="arr_country_name"),
+
+        // Airplane
+        @Result(property="airplane.id",               column="ap_id"),
+        @Result(property="airplane.model",            column="ap_model"),
+        @Result(property="airplane.totalSeats",       column="ap_total_seats")
+    })
+    @SelectProvider(type = FlightSqlBuilder.class, method = "buildSearchFlights")
+    List<Flight> searchFlightsAdvanced(@Param("criteria") FlightSearchCriteria criteria);
 }

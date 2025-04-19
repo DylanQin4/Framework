@@ -2,6 +2,10 @@ package mg.itu.avion.flight;
 
 import java.util.List;
 
+import org.apache.ibatis.session.SqlSession;
+
+import mg.itu.avion.flight.search.FlightSearchCriteria;
+
 public class FlightService {
     private FlightRepository flightRepository;
 
@@ -27,5 +31,9 @@ public class FlightService {
     
     public void deleteFlight(String id) {
         flightRepository.deleteFlight(Integer.parseInt(id));
+    }
+
+    public List<Flight> searchFlightsAdvanced(FlightSearchCriteria criteria) {
+        return flightRepository.searchFlightsAdvanced(criteria);
     }
 }
