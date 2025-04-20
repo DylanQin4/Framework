@@ -6,7 +6,7 @@
   <h1 class="text-2xl font-semibold mb-6">Recherche avancée de vols</h1>
 
   <!-- Formulaire GET -->
-  <form method="get" action="${pageContext.request.contextPath}/flights/search" class="space-y-6">
+  <form method="get" action="${pageContext.request.contextPath}/flight/search" class="space-y-6">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <!-- Départ -->
       <div>

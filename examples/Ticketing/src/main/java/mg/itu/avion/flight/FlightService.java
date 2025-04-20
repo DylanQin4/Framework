@@ -2,8 +2,6 @@ package mg.itu.avion.flight;
 
 import java.util.List;
 
-import org.apache.ibatis.session.SqlSession;
-
 import mg.itu.avion.flight.search.FlightSearchCriteria;
 
 public class FlightService {

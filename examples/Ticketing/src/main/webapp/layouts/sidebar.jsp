@@ -27,14 +27,14 @@
   <div class="flex min-h-screen">
     <!-- Sidebar -->
     <nav class="w-64 bg-white border-r border-gray-200 p-4">
-      <a class="inline-flex items-center gap-2 text-lg font-semibold mb-6" href="${pageContext.request.contextPath}/reservations">
+      <a class="inline-flex items-center gap-2 text-lg font-semibold mb-6" href="${pageContext.request.contextPath}">
         <span>✈️</span> <span>Ticketing</span>
       </a>
 
       <ul class="flex flex-col gap-1">
         <li>
           <a
-            href="${pageContext.request.contextPath}/flights"
+            href="${pageContext.request.contextPath}/admin/flights"
             class="${activeMenu == 'flights'
               ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
               : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
@@ -43,7 +43,7 @@
         </li>
         <li>
           <a
-            href="${pageContext.request.contextPath}/flights/search"
+            href="${pageContext.request.contextPath}/flight/search"
             class="${activeMenu == 'searchFlights'
               ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
               : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
@@ -61,7 +61,7 @@
         </li>
         <li>
           <a
-            href="${pageContext.request.contextPath}/configs"
+            href="${pageContext.request.contextPath}/admin/configs"
             class="${activeMenu == 'configs'
               ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
               : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">

@@ -5,7 +5,7 @@
 <div class="max-w-7xl mx-auto">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-semibold">Liste des vols</h1>
-    <a href="${pageContext.request.contextPath}/flights/add"
+    <a href="${pageContext.request.contextPath}/admin/flights/add"
        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
       Ajouter un vol
     </a>
@@ -39,11 +39,11 @@
             <td class="px-4 py-3 whitespace-nowrap">${flight.airplane.model}</td>
             <td class="px-4 py-3">
               <div class="flex items-center gap-2">
-                <a href="${pageContext.request.contextPath}/flights/edit?id=${flight.id}"
+                <a href="${pageContext.request.contextPath}/admin/flights/edit?id=${flight.id}"
                    class="inline-flex px-3 py-1.5 rounded-md bg-amber-500 text-white hover:bg-amber-600 text-xs font-medium">
                   Modifier
                 </a>
-                <a href="${pageContext.request.contextPath}/flights/delete?id=${flight.id}"
+                <a href="${pageContext.request.contextPath}/admin/flights/delete?id=${flight.id}"
                    class="inline-flex px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700 text-xs font-medium"
                    onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce vol?')">
                   Supprimer

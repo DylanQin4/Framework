@@ -8,7 +8,7 @@
 <div class="max-w-5xl mx-auto p-4">
   <h1 class="text-2xl font-semibold mb-6">Modifier un Vol</h1>
 
-  <form action="${pageContext.request.contextPath}/flights/edit"
+  <form action="${pageContext.request.contextPath}/admin/flights/edit"
         method="post"
         id="flightForm"
         class="needs-validation space-y-8"
@@ -214,7 +214,7 @@
               class="inline-flex items-center px-5 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
         Enregistrer les modifications
       </button>
-      <a href="${pageContext.request.contextPath}/flights"
+      <a href="${pageContext.request.contextPath}/admin/flights"
          class="inline-flex items-center px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
         Annuler
       </a>
