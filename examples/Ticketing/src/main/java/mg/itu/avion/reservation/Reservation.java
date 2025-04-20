@@ -32,6 +32,12 @@ public class Reservation {
     private LocalDateTime updatedAt;
 
     private List<ReservationPassenger> passengers;
+    private String flightNumber;
+    private String departureTime;
+    private String arrivalTime;
+    private String airplane;
+    private String departureCity;
+    private String arrivalCity;
 
     public Date getCreatedAtAsDate() {
         return createdAt == null ? null : Date.from(createdAt.atZone(ZoneId.systemDefault()).toInstant());

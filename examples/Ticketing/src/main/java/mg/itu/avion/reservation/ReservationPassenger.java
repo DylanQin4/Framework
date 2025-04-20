@@ -27,6 +27,9 @@ public class ReservationPassenger {
     private String  filePathPassport;
     private LocalDateTime createdAt;
 
+    private String passengerType;
+    private String className;
+
     public Date getCreatedAtAsDate() {
         return createdAt == null ? null : Date.from(createdAt.atZone(ZoneId.systemDefault()).toInstant());
     }

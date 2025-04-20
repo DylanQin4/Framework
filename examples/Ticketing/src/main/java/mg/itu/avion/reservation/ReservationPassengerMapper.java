@@ -4,23 +4,33 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 public interface ReservationPassengerMapper {
-
-    @Select("SELECT * FROM reservation_passengers WHERE reservation_id = #{reservationId} ORDER BY id")
-    @Results({
-        @Result(property="id",                 column="id"),
-        @Result(property="reservationId",      column="reservation_id"),
-        @Result(property="passengerName",      column="passenger_name"),
-        @Result(property="passengerBirthdate", column="passenger_birthdate"),
-        @Result(property="passengerTypeId",    column="passenger_type_id"),
-        @Result(property="classId",            column="class_id"),
-        @Result(property="basePrice",          column="base_price"),
-        @Result(property="discount",           column="discount"),
-        @Result(property="finalPrice",         column="final_price"),
-        @Result(property="promoApplied",       column="promo_applied"),
-        @Result(property="filePathPassport",   column="file_path_passport"),
-        @Result(property="createdAt",          column="created_at")
-    })
-    List<ReservationPassenger> findByReservationId(Integer reservationId);
+	@Select("""
+		SELECT rp.*,
+			cls.label AS class_name,
+			pt.type_name  AS passenger_type
+		FROM reservation_passengers rp
+		LEFT JOIN class           cls ON cls.id = rp.class_id
+		LEFT JOIN passenger_type  pt  ON pt.id  = rp.passenger_type_id
+		WHERE rp.reservation_id = #{reservationId}
+		ORDER BY rp.id
+		""")
+	@Results({
+		@Result(property="id",                 column="id"),
+		@Result(property="reservationId",      column="reservation_id"),
+		@Result(property="passengerName",      column="passenger_name"),
+		@Result(property="passengerBirthdate", column="passenger_birthdate"),
+		@Result(property="passengerTypeId",    column="passenger_type_id"),
+		@Result(property="passengerType",      column="passenger_type"),   // ← ajouté (nom du type)
+		@Result(property="classId",            column="class_id"),
+		@Result(property="className",          column="class_name"),
+		@Result(property="basePrice",          column="base_price"),
+		@Result(property="discount",           column="discount"),
+		@Result(property="finalPrice",         column="final_price"),
+		@Result(property="promoApplied",       column="promo_applied"),
+		@Result(property="filePathPassport",   column="file_path_passport"),
+		@Result(property="createdAt",          column="created_at")
+	})
+	List<ReservationPassenger> findByReservationId(Integer reservationId);
 
     @Insert("""
         INSERT INTO reservation_passengers (
