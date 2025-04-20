@@ -1,5 +1,9 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="c"  uri="http://java.sun.com/jsp/jstl/core" %>
+
+<c:set var="isAdmin" value="${sessionScope.isAdmin}" />
+<c:set var="isUser"  value="${sessionScope.isUser}" />
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -9,7 +13,7 @@
   <!-- Tailwind CDN (JIT) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // Palette légère pour la sidebar
+    // Palette legère pour la sidebar
     tailwind.config = {
       theme: {
         extend: {
@@ -32,49 +36,60 @@
       </a>
 
       <ul class="flex flex-col gap-1">
-        <li>
-          <a
-            href="${pageContext.request.contextPath}/admin/flights"
-            class="${activeMenu == 'flights'
-              ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
-              : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
-            Vols
-          </a>
-        </li>
-        <li>
-          <a
-            href="${pageContext.request.contextPath}/flight/search"
-            class="${activeMenu == 'searchFlights'
-              ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
-              : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
-            Recherche de vols
-          </a>
-        </li>
-        <li>
-          <a
-            href="${pageContext.request.contextPath}/reservations"
-            class="${activeMenu == 'reservations'
-              ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
-              : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
-            Réservations
-          </a>
-        </li>
-        <li>
-          <a
-            href="${pageContext.request.contextPath}/admin/configs"
-            class="${activeMenu == 'configs'
-              ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
-              : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
-            Configurations
-          </a>
-        </li>
+        <!-- ADMIN uniquement : CRUD vols -->
+        <c:if test="${isAdmin}">
+          <li>
+            <a href="${pageContext.request.contextPath}/admin/flights"
+              class="${activeMenu == 'flights'
+                ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
+                : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
+              Vols
+            </a>
+          </li>
+        </c:if>
 
-        <li class="mt-4 pt-4 border-t border-gray-200">
-          <a href="${pageContext.request.contextPath}/logout"
-             class="block px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-700">
-            Déconnexion
-          </a>
-        </li>
+        <!-- Commun ADMIN et USER : recherche avancee -->
+        <c:if test="${isAdmin or isUser}">
+          <li>
+            <a href="${pageContext.request.contextPath}/flight/search"
+              class="${activeMenu == 'searchFlights'
+                ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
+                : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
+              Recherche de vols
+            </a>
+          </li>
+
+          <li>
+            <a href="${pageContext.request.contextPath}/reservations"
+              class="${activeMenu == 'reservations'
+                ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
+                : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
+              Reservations
+            </a>
+          </li>
+        </c:if>
+
+        <!-- ADMIN uniquement : Configurations -->
+        <c:if test="${isAdmin}">
+          <li>
+            <a href="${pageContext.request.contextPath}/admin/configs"
+              class="${activeMenu == 'configs'
+                ? 'block px-3 py-2 rounded-lg bg-blue-50 text-blue-700 font-medium'
+                : 'block px-3 py-2 rounded-lg hover:bg-gray-100'}">
+              Configurations
+            </a>
+          </li>
+        </c:if>
+
+        <!-- Deconnexion visible si connecte -->
+        <c:if test="${sessionScope.auth}">
+          <li class="mt-4 pt-4 border-t border-gray-200">
+            <a href="${pageContext.request.contextPath}/logout"
+              class="block px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-700">
+              Deconnexion
+            </a>
+          </li>
+        </c:if>
       </ul>
     </nav>
 

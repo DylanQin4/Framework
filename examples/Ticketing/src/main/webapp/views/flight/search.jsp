@@ -2,6 +2,8 @@
 <%@ taglib prefix="c"   uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
+<c:set var="isAdmin" value="${sessionScope.isAdmin}" />
+
 <div class="max-w-7xl mx-auto">
   <h1 class="text-2xl font-semibold mb-6">Recherche avancée de vols</h1>
 
@@ -143,10 +145,12 @@
                        class="inline-flex items-center px-3 py-1.5 rounded-md border hover:bg-gray-50 text-sm">
                       Réserver
                     </a>
-                    <a href="${pageContext.request.contextPath}/flights/edit?id=${f.id}"
-                       class="inline-flex items-center px-3 py-1.5 rounded-md border hover:bg-gray-50 text-sm">
-                      Modifier
-                    </a>
+                    <c:if test="${isAdmin}">
+                      <a href="${pageContext.request.contextPath}/admin/flights/edit?id=${f.id}"
+                        class="inline-flex items-center px-3 py-1.5 rounded-md border hover:bg-gray-50 text-sm">
+                        Modifier
+                      </a>
+                    </c:if>
                   </div>
                 </td>
               </tr>

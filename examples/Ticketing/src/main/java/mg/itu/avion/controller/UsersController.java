@@ -38,12 +38,12 @@ public class UsersController {
             mv.addObject("errors", "Email ou mot de passe incorrect");
             return mv;
         }
-
-        System.out.println("User: " + user);
         
         session.add("auth", true);
         session.add("userId", user.getId());
         session.add("role", user.getRolesLabel());
+        session.add("isAdmin", user.getRolesLabel().contains("ADMIN"));
+        session.add("isUser", user.getRolesLabel().contains("USER"));
         session.add("username", user.getUsername());
         session.add("email", user.getEmail());
 
