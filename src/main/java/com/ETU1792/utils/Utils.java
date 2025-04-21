@@ -45,6 +45,10 @@ public class Utils {
     // Retrieves the mapping for a given URL from the URL mappings
     public static Mapping getMappingForUrl(String url, HashMap<String, Mapping> urlMappings, String requestMethod) {
         String cleanUrl = url.split("\\?")[0];
+        // normalisation: enlever "/" au début et fin
+        if (cleanUrl.startsWith("/")) cleanUrl = cleanUrl.substring(1);
+        if (cleanUrl.endsWith("/") && cleanUrl.length() > 1) cleanUrl = cleanUrl.substring(0, cleanUrl.length() - 1);
+        // "/" devient ""
         return new Mapping().findMappingForUrl(urlMappings, cleanUrl, requestMethod);
     }
 
@@ -82,7 +86,7 @@ public class Utils {
         // Prepare method parameters
         List<Object> methodParameters;
         try {
-            methodParameters = prepareMethodParameters(controllerInstance, method, request, response, errors);
+            methodParameters = prepareMethodParameters(controllerInstance, method, request, response, errors, mapping);
         } catch (Exception e) {
             e.printStackTrace();
             HttpSession session = request.getSession();
@@ -127,17 +131,22 @@ public class Utils {
     // Prepares the parameters for the method invocation
     public static List<Object> prepareMethodParameters(Object controllerInstance, Method method,
                                                     HttpServletRequest request, HttpServletResponse response,
-                                                    Map<String, String> errors) throws Exception {
+                                                    Map<String, String> errors, Mapping mapping) throws Exception {
         List<Object> parametersList = new ArrayList<>();
         String[] paramNames = paranamer.lookupParameterNames(method);
         Parameter[] parameters = method.getParameters();
+
+        // petit utilitaire
+        java.util.function.Function<String,String> pathLookup = (n) -> {
+            if (mapping != null && mapping.getPathParams() != null) return mapping.getPathParams().get(n);
+            return null;
+        };
 
         for (int i = 0; i < parameters.length; i++) {
             Parameter param = parameters[i];
             Class<?> paramType = param.getType();
             String paramName = (paramNames != null && paramNames.length > i) ? paramNames[i] : param.getName();
 
-            // Récupère le nom voulu (annotation @Param prioritaire)
             Param paramAnnotation = param.getAnnotation(Param.class);
             String name = (paramAnnotation != null && !paramAnnotation.name().isEmpty()) ? paramAnnotation.name() : paramName;
 
@@ -198,22 +207,24 @@ public class Utils {
                 continue;
             }
 
-            // 4) @Param scalaire
-            if (param.isAnnotationPresent(Param.class)) {
-                String value = request.getParameter(name);
-                parametersList.add(convertType(paramType, value));
-                continue;
-            }
-
-            // 5) @ParamObject
+            // 4) @ParamObject
             if (param.isAnnotationPresent(ParamObject.class)) {
                 Object obj = processParamObject(paramType, request, response, method, errors);
                 parametersList.add(obj);
                 continue;
             }
 
+            // 5) @Param scalaire
+            if (param.isAnnotationPresent(Param.class)) {
+                String value = request.getParameter(name);
+                if (value == null) value = pathLookup.apply(name); // ← NEW: chercher dans l’URL /{name}
+                parametersList.add(convertType(paramType, value));
+                continue;
+            }
+
             // 6) Scalaire par défaut (nom de variable)
             String value = request.getParameter(paramName);
+            if (value == null) value = pathLookup.apply(paramName); // ← NEW: fallback path param
             parametersList.add(convertType(paramType, value));
         }
         return parametersList;
