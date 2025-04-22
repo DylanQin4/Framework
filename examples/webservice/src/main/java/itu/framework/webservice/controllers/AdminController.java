@@ -8,9 +8,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 public class AdminController {
 
   @PreAuthorize("hasRole('ADMIN')")
-  @GetMapping("/admin/parametrage")
+  @GetMapping("/admin/settings")
   public String settings() {
-    return "admin/parametrage";
+    return "admin/settings";
   }
 }
 

@@ -8,9 +8,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 public class ReservationController {
 
   @PreAuthorize("hasAnyRole('USER','ADMIN')")
-  @GetMapping("/reservations/mes")
+  @GetMapping("/my-reservations")
   public String myReservations() {
-    return "reservations/mes";
+    return "reservations/my";
   }
 }
 

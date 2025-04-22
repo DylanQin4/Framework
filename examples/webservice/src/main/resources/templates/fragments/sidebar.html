@@ -2,16 +2,18 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
-  <div th:fragment="sidebar">
-    <nav class="p-2 space-y-1">
-      <a th:href="@{/}" class="block px-3 py-2 rounded hover:bg-gray-100">Accueil</a>
+<div th:fragment="sidebar" class="p-3 space-y-1">
+  <!-- Mes réservations : ADMIN et USER -->
+  <a th:href="@{/my-reservations}" class="block px-3 py-2 rounded hover:bg-gray-100"
+     sec:authorize="hasAnyRole('ADMIN','USER')">
+    Mes réservations
+  </a>
 
-      <a th:href="@{/reservations/mes}" class="block px-3 py-2 rounded hover:bg-gray-100"
-         sec:authorize="hasAnyRole('USER','ADMIN')">Mes réservations</a>
-
-      <a th:href="@{/admin/parametrage}" class="block px-3 py-2 rounded hover:bg-gray-100"
-         sec:authorize="hasRole('ADMIN')">Paramétrage</a>
-    </nav>
-  </div>
+  <!-- Paramétrage : ADMIN -->
+  <a th:href="@{/admin/settings}" class="block px-3 py-2 rounded hover:bg-gray-100"
+     sec:authorize="hasRole('ADMIN')">
+    Paramétrage
+  </a>
+</div>
 </body>
 </html>

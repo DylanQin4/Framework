@@ -8,8 +8,8 @@ public class HomeController {
 
   @GetMapping("/")
   public String home() {
-    // renvoie le layout avec le dashboard par défaut
-    return "home/index";
+    // redirect to reservations page
+    return "redirect:/my-reservations";
   }
 }
 
