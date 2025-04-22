@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <th:block th:replace="~{layouts/app :: layout('Mes réservations', ~{::content})}">
+    <title>Mes réservations</title>
+    <div th:fragment="content">
+      <div class="bg-white p-4 rounded-xl shadow">
+        <h2 class="text-lg font-semibold mb-2">Mes réservations</h2>
+        <p class="text-sm text-gray-600">Liste des réservations de l’utilisateur connecté.</p>
+      </div>
+    </div>
+  </th:block>
+</html>

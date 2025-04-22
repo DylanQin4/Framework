@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" th:href="@{/css/output.css}"/>
+  <title>Connexion</title>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gray-50">
+  <div class="w-full max-w-sm bg-white p-6 rounded-2xl shadow">
+    <h1 class="text-xl font-semibold mb-4">Connexion</h1>
+    <form th:action="@{/login}" method="post" class="space-y-4">
+      <div>
+        <label class="text-sm">Nom d'utilisateur</label>
+        <input name="username" class="mt-1 w-full border rounded-lg px-3 py-2" required/>
+      </div>
+      <div>
+        <label class="text-sm">Mot de passe</label>
+        <input type="password" name="password" class="mt-1 w-full border rounded-lg px-3 py-2" required/>
+      </div>
+      <button class="w-full py-2 rounded-lg bg-black text-white">Se connecter</button>
+    </form>
+    <div class="text-xs text-gray-500 mt-3">
+      Démo : admin/123 (ADMIN) — user/123 (USER)
+    </div>
+    <div th:if="${param.error}" class="mt-3 text-sm text-red-600">
+      Identifiants invalides.
+    </div>
+    <div th:if="${param.logout}" class="mt-3 text-sm text-green-600">
+      Déconnexion réussie.
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="layout(pageTitle, content)">
+
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title th:text="${pageTitle} ?: 'App'">App</title>
+  <link rel="stylesheet" th:href="@{/css/output.css}"/>
+</head>
+
+<body class="min-h-screen bg-gray-50">
+  <div class="flex">
+    <aside class="w-64 min-h-screen bg-white border-r">
+      <div class="p-4 border-b">
+        <div class="text-xl font-bold">Ticketing</div>
+        <div class="text-xs text-gray-500 mt-1">
+          Connecté : <span sec:authentication="name"></span>
+        </div>
+      </div>
+      <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    </aside>
+
+    <main class="flex-1 p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold" th:text="${pageTitle} ?: 'Dashboard'">Dashboard</h1>
+        <form th:action="@{/logout}" method="post">
+          <button class="px-3 py-1 rounded-lg border hover:bg-gray-100">Se déconnecter</button>
+        </form>
+      </div>
+
+      <div th:insert="${content}"></div>
+    </main>
+  </div>
+</body>
+</html>

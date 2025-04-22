@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <th:block th:replace="~{layouts/app :: layout('Paramétrage', ~{::content})}">
+    <title>Paramétrage</title>
+    <div th:fragment="content">
+      <div class="bg-white p-4 rounded-xl shadow">
+        <h2 class="text-lg font-semibold mb-2">Paramétrage (ADMIN)</h2>
+        <p class="text-sm text-gray-600">Place pour vos formulaires de config…</p>
+      </div>
+    </div>
+  </th:block>
+</html>
