@@ -9,11 +9,27 @@
     Mes réservations
   </a>
 
-  <!-- Paramétrage : ADMIN -->
-  <a th:href="@{/admin/settings}" class="block px-3 py-2 rounded hover:bg-gray-100"
-     sec:authorize="hasRole('ADMIN')">
-    Paramétrage
-  </a>
+  <div sec:authorize="hasRole('ADMIN')" x-data="{ open: false }" class="mt-2">
+    <button @click="open = !open"
+            class="flex w-full items-center justify-between px-3 py-2 rounded hover:bg-gray-100 text-left">
+      <span class="font-medium">Paramétrage</span>
+      <svg :class="{'rotate-90': open}" class="h-4 w-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+
+    <div x-show="open" class="ml-4 mt-1 space-y-1">
+      <a th:href="@{/admin/settings}"
+        class="block px-3 py-2 rounded hover:bg-gray-100">
+        Configuration générale
+      </a>
+      <a th:href="@{/admin/settings/passenger-types}"
+        class="block px-3 py-2 rounded hover:bg-gray-100">
+        Tranches d’âges
+      </a>
+    </div>
+  </div>
 </div>
 </body>
 </html>
