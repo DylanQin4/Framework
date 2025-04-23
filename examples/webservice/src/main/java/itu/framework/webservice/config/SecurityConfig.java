@@ -14,7 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 public class SecurityConfig {
 
-    // UserDetailsService basé JDBC avec requêtes custom sur TON schéma
+    // UserDetailsService base sur JDBC
     @Bean
     public UserDetailsService userDetailsService(DataSource dataSource) {
         JdbcUserDetailsManager mgr = new JdbcUserDetailsManager(dataSource);
