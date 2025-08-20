@@ -2,6 +2,7 @@ package mg.itu.avion.utils;
 
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Getter;
+
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -37,6 +38,7 @@ public class MyBatisUtil {
         configuration.addMapper(mg.itu.avion.flight.FlightClassPassengerMapper.class);
         configuration.addMapper(mg.itu.avion.passenger.ConfigFaresMapper.class);
         configuration.addMapper(mg.itu.avion.airplane.AirplaneClassMapper.class);
+        configuration.addMapper(mg.itu.avion.promotion.PromotionMapper.class);
 
         sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
     }

@@ -5,7 +5,7 @@ TRUNCATE TABLE
     reservations,
     flight_class_passenger,
     flights
-RESTART IDENTITY
+    RESTART IDENTITY
 ;
 
 COMMIT;

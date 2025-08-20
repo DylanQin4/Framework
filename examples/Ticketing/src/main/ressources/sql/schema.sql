@@ -185,6 +185,82 @@ CREATE TABLE configurations (
     description VARCHAR(255)
 );
 
+-- Alea
+CREATE TABLE promotion(
+    id INTEGER PRIMARY KEY,
+    flight_id INTEGER NOT NULL REFERENCES flights(id),
+    class_id INTEGER NOT NULL REFERENCES class(id),
+    promotion_limit INTEGER NOT NULL,          -- number of reservations eligible for the promotion for this flight
+    promotion_discount NUMERIC(10,2) NOT NULL DEFAULT 0.00, --
+    base_price NUMERIC(10, 2) NOT NULL,
+    deadline TIMESTAMP NOT NULL -- deadline for the promotion
+);
+INSERT INTO promotion (id, flight_id, class_id, promotion_limit, promotion_discount, base_price, deadline)
+VALUES (1, 5, 1, 2, 300.00, 300.00, '2025-09-03 23:59:59');
+INSERT INTO promotion (id, flight_id, class_id, promotion_limit, promotion_discount, base_price, deadline)
+VALUES (2, 5, 1, 4, 200.00, 300.00, '2025-09-27 23:59:59');
+
+
+INSERT INTO promotion (id, flight_id, class_id, promotion_limit, promotion_discount, base_price, deadline)
+VALUES (3, 6, 1, 3, 350.00, 300.00, '2025-09-05 23:59:59');
+INSERT INTO promotion (id, flight_id, class_id, promotion_limit, promotion_discount, base_price, deadline)
+VALUES (4, 6, 1, 1, 400.00, 300.00, '2025-09-13 23:59:59');
+
+
+
+-- CA par promotion
+WITH paid AS (
+  SELECT
+      p.id                    AS promotion_id,
+      p.flight_id,
+      p.class_id,
+      p.promotion_limit,
+      p.promotion_discount,
+      COUNT(rp.id)            AS paid_passengers
+  FROM promotion p
+  JOIN reservations r
+        ON r.flight_id = p.flight_id
+  JOIN reservation_passengers rp
+        ON rp.reservation_id = r.id
+       AND rp.class_id       = p.class_id
+  WHERE r.status = 'PAID'
+    AND r.created_at <= p.deadline
+  GROUP BY p.id, p.flight_id, p.class_id, p.promotion_limit, p.promotion_discount
+)
+SELECT
+  promotion_id,
+  flight_id,
+  class_id,
+  paid_passengers,
+  LEAST(paid_passengers, promotion_limit)                       AS qty_billed,
+  (LEAST(paid_passengers, promotion_limit) * promotion_discount) AS revenue
+FROM paid
+ORDER BY flight_id, class_id, promotion_id;
+
+-- CA global
+WITH paid AS (
+  SELECT
+      p.id                    AS promotion_id,
+      p.promotion_limit,
+      p.promotion_discount,
+      COUNT(rp.id)            AS paid_passengers
+  FROM promotion p
+  JOIN reservations r
+        ON r.flight_id = p.flight_id
+  JOIN reservation_passengers rp
+        ON rp.reservation_id = r.id
+       AND rp.class_id       = p.class_id
+  WHERE r.status = 'PAID'
+    AND r.created_at <= p.deadline
+  GROUP BY p.id, p.promotion_limit, p.promotion_discount
+)
+SELECT
+  SUM(LEAST(paid_passengers, promotion_limit) * promotion_discount)::numeric(16,2)
+    AS total_revenue
+FROM paid;
+
+
+
 ---------------------------------------------------------------------
 -- Trigger and function to enforce business rules:
 -- 1. Verify that the reservation is made sufficiently early (before departure_time minus reservation_cutoff_hours).

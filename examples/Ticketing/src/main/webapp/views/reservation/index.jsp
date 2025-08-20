@@ -81,21 +81,27 @@
                 </td>
 
                 <td class="px-6 py-4 text-sm flex items-center gap-2">
+                  <c:if test="${r.status == 'RESERVED' || r.status == 'PENDING'}">
+                    <a class="btn btn-sm btn-success"
+                      href="${pageContext.request.contextPath}/reservations/pay?reservationId=${r.id}">
+                      Payer
+                    </a>
+                  </c:if>
                   <c:if test="${r.status != 'CANCELLED'}">
                     <a href="${pageContext.request.contextPath}/reservations/cancel?reservationId=${r.id}"
                        class="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-white hover:bg-red-700"
                        onclick="return confirm('Confirmer l\'annulation ?');">
                       Annuler
                     </a>
-                    <a href="${pageContext.request.contextPath}/reservations/detail?id=${r.id}"
-                      class="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">
-                      Détails
-                    </a>
-                    <a href="${pageContext.request.contextPath}/reservations/edit?id=${r.id}"
-                      class="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">
-                      Modifier
-                    </a>
                   </c:if>
+                  <a href="${pageContext.request.contextPath}/reservations/detail?id=${r.id}"
+                    class="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">
+                    Détails
+                  </a>
+                  <a href="${pageContext.request.contextPath}/reservations/edit?id=${r.id}"
+                    class="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">
+                    Modifier
+                  </a>
                 </td>
               </tr>
             </c:forEach>

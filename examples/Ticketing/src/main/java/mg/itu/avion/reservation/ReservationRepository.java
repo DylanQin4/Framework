@@ -83,4 +83,11 @@ public class ReservationRepository {
             session.commit();
         }
     }
+
+    public int countPaidSeatsByFlightAndClass(Integer flightId, Integer classId) {
+        try (org.apache.ibatis.session.SqlSession session = sqlSessionFactory.openSession()) {
+            ReservationPassengerMapper rpm = session.getMapper(ReservationPassengerMapper.class);
+            return rpm.countPaidSeatsByFlightAndClass(flightId, classId);
+        }
+    }
 }

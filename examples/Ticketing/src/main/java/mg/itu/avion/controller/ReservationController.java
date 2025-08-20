@@ -441,4 +441,37 @@ public class ReservationController {
         return mv;
     }
 
+    @GET("reservations/pay")
+    public ModelView payReservation(@Param(name = "reservationId") Integer reservationId, MySession session) {
+        Integer userId = (Integer) session.get("userId");
+        if (userId == null) {
+            ModelView mv = new ModelView("login");
+            mv.setIsRedirect(true);
+            return mv;
+        }
+
+        try {
+            Reservation r = reservationService.getReservationById(reservationId);
+            if (r == null) throw new IllegalArgumentException("Réservation introuvable.");
+            if (!r.getUserId().equals(userId)) throw new IllegalArgumentException("Accès refusé.");
+
+            reservationService.payReservation(r);
+
+            // Retour sur le détail de la réservation
+            ModelView mv = new ModelView("detail?id=" + reservationId);
+            mv.setIsRedirect(true);
+            return mv;
+
+        } catch (IllegalArgumentException e) {
+            // On revient à la liste avec un message d'erreur
+            ModelView mv = new ModelView("/layouts/sidebar.jsp");
+            mv.addObject("contentJsp", "/views/reservation/index.jsp");
+            mv.addObject("activeMenu", "reservations");
+            mv.addObject("pageTitle", "Mes Réservations");
+            mv.addObject("reservations", reservationService.getReservationsByUserId(userId));
+            mv.addObject("errorMessage", e.getMessage());
+            return mv;
+        }
+    }
+
 }

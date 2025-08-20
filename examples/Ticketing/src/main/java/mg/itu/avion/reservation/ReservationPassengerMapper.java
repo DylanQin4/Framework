@@ -58,4 +58,14 @@ public interface ReservationPassengerMapper {
     @Delete("DELETE FROM reservation_passengers WHERE reservation_id = #{reservationId}")
     void deleteByReservationId(@Param("reservationId") Integer reservationId);
 
+	@Select("""
+		SELECT COUNT(*) FROM reservation_passengers rp
+		JOIN reservations r ON r.id = rp.reservation_id
+		WHERE r.flight_id = #{flightId}
+		AND rp.class_id = #{classId}
+		AND r.status = 'PAID'
+	""")
+	int countPaidSeatsByFlightAndClass(@Param("flightId") Integer flightId, @Param("classId") Integer classId);
+
+
 }

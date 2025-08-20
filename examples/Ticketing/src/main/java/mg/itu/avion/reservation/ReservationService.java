@@ -181,4 +181,19 @@ public class ReservationService {
         reservationRepository.updateReservation(header);
         reservationRepository.savePassengers(header.getId(), passengers);
     }
+
+    public void payReservation(Reservation reservation) {
+        if (reservation == null) {
+            throw new IllegalArgumentException("Réservation introuvable.");
+        }
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+            throw new IllegalArgumentException("Impossible de payer une réservation annulée.");
+        }
+        if (reservation.getStatus() == ReservationStatus.PAID) {
+            return;
+        }
+        reservation.setStatus(ReservationStatus.PAID);
+        reservation.setUpdatedAt(LocalDateTime.now());
+        reservationRepository.updateReservation(reservation);
+    }
 }

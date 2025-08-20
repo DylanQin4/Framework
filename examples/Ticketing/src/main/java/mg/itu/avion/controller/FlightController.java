@@ -103,7 +103,7 @@ public class FlightController {
 
     
     @POST("admin/flights/add")
-    @FormView("admin/flights/add")
+    @FormView("admin/flights")
     public ModelView addFlight(@ParamObject Flight newFlight, @Param(name = "flightClassPassengerData") String flightClassPassengerData) {
         // Enregistrer le vol
         newFlight.setCreatedAt(LocalDateTime.now());
