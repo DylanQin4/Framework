@@ -1,10 +1,8 @@
 package mg.itu.avion.utils;
 
-import javax.sql.DataSource;
-
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Getter;
-import org.apache.ibatis.datasource.pooled.PooledDataSource;
+
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -26,8 +24,21 @@ public class MyBatisUtil {
         Environment environment = new Environment("development", transactionFactory, dataSource);
         Configuration configuration = new Configuration(environment);
 
-        // Enregistrer tes mappers annotés ici (par exemple, UserMapper)
-        configuration.addMapper(mg.itu.avion.mapper.UserMapper.class);
+        configuration.addMapper(mg.itu.avion.user.UserMapper.class);
+        configuration.addMapper(mg.itu.avion.user.RoleMapper.class);
+        configuration.addMapper(mg.itu.avion.flight.FlightMapper.class);
+        configuration.addMapper(mg.itu.avion.airplane.AirplaneMapper.class);
+        configuration.addMapper(mg.itu.avion.city.CityMapper.class);
+        configuration.addMapper(mg.itu.avion.city.CountryMapper.class);
+        configuration.addMapper(mg.itu.avion.config.ConfigurationMapper.class);
+        configuration.addMapper(mg.itu.avion.airplane.ClassMapper.class);
+        configuration.addMapper(mg.itu.avion.passenger.PassengerTypeMapper.class);
+        configuration.addMapper(mg.itu.avion.reservation.ReservationMapper.class);
+        configuration.addMapper(mg.itu.avion.reservation.ReservationPassengerMapper.class);
+        configuration.addMapper(mg.itu.avion.flight.FlightClassPassengerMapper.class);
+        configuration.addMapper(mg.itu.avion.passenger.ConfigFaresMapper.class);
+        configuration.addMapper(mg.itu.avion.airplane.AirplaneClassMapper.class);
+        configuration.addMapper(mg.itu.avion.promotion.PromotionMapper.class);
 
         sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
     }

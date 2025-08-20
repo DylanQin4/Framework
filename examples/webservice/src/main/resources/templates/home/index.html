@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+  <th:block th:replace="~{layouts/app :: layout('Accueil', ~{::content})}">
+    <div th:fragment="content">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="p-4 bg-white rounded-xl shadow">
+          <div class="text-sm text-gray-500">Bienvenue</div>
+          <div class="text-lg font-semibold">Dashboard</div>
+        </div>
+      </div>
+    </div>
+  </th:block>
+</html>

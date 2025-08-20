@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+  <!-- on passe le titre + le bloc de contenu au layout -->
+  <th:block th:replace="~{layouts/app :: layout('Mes réservations', ~{::content})}">
+
+    <div th:fragment="content">
+      <div class="bg-white p-4 rounded-xl shadow">
+        <h2 class="text-lg font-semibold mb-2">Mes réservations</h2>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl shadow mt-4">
+        <table class="w-full table-auto">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Vol</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Passagers</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Montant total</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Réduction totale</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Statut</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Créée le</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody class="divide-y divide-gray-100 bg-white">
+            <!-- aucun résultat -->
+            <tr th:if="${#lists.isEmpty(reservations)}">
+              <td colspan="7" class="px-6 py-6 text-center text-gray-500">Aucune réservation.</td>
+            </tr>
+
+            <!-- liste -->
+            <tr th:each="r : ${reservations}" th:unless="${#lists.isEmpty(reservations)}">
+				<td class="px-6 py-4 text-sm text-gray-900"
+					th:text="${'#' + (r.flightId != null ? r.flightId : r.id)}">#1</td>
+
+				<!-- Passagers : compte + 3 premiers noms -->
+				<td class="px-6 py-4 text-sm text-gray-700">
+					<span class="font-medium"
+						th:text="${r.passengers != null ? r.passengers.size() : 0}">0</span>
+
+					<div class="mt-1 flex flex-wrap gap-1" th:if="${r.passengers != null and !#lists.isEmpty(r.passengers)}">
+					<span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
+							th:each="p, idx : ${r.passengers}"
+							th:if="${idx.index < 3}"
+							th:text="${p.passengerName}">John Doe</span>
+					<span class="text-xs text-gray-500"
+							th:if="${r.passengers.size() > 3}">…</span>
+					</div>
+				</td>
+
+				<!-- Montants (affiche '-' si null) -->
+				<td class="px-6 py-4 text-sm text-gray-900"
+					th:text="${r.totalAmount != null ? ('Ar ' + #numbers.formatDecimal(r.totalAmount, 0, 'COMMA', 0, 'POINT')) : '-'}">
+					Ar 0
+				</td>
+
+				<td class="px-6 py-4 text-sm text-gray-900"
+					th:text="${r.totalDiscount != null ? ('Ar ' + #numbers.formatDecimal(r.totalDiscount, 0, 'COMMA', 0, 'POINT')) : '-'}">
+					Ar 0
+				</td>
+
+				<!-- Statut avec couleur -->
+				<td class="px-6 py-4 text-sm">
+					<span class="font-semibold"
+						th:text="${r.status != null ? r.status : 'N/A'}"
+						th:classappend="${r.status}=='RESERVED' ? ' text-green-600' :
+										(${r.status}=='CANCELLED' ? ' text-red-600' :
+										(${r.status}=='PAID' ? ' text-blue-600' : ' text-gray-600'))">
+					RESERVED
+					</span>
+				</td>
+
+				<!-- Date -->
+				<td class="px-6 py-4 text-sm text-gray-500"
+					th:text="${r.createdAt != null ? #temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm') :
+							(r.createdAtAsDate != null ? #dates.format(r.createdAtAsDate, 'dd/MM/yyyy HH:mm') : '-')}">
+					01/01/2025 12:00
+				</td>
+
+				<!-- Actions -->
+				<td class="px-6 py-4 text-sm flex items-center gap-2">
+					<a th:href="@{/reservations/pdf(id=${r.id})}"
+						class="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50">
+						Télécharger PDF
+					</a>
+				</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </th:block>
+</html>
